@@ -1,36 +1,1250 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
-          description: Healthy
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── PUBLIC: APPLICATIONS ──────────────────────────────
+  /applications:
+    post:
+      operationId: submitApplication
+      summary: Submit a loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/track:
+    get:
+      operationId: trackApplication
+      summary: Track application status by email
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationTrackerResult"
+
+  # ── PUBLIC: DOCUMENTS ────────────────────────────────
+  /documents/upload-url:
+    post:
+      operationId: requestDocumentUploadUrl
+      summary: Request presigned upload URL for KYC document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentUploadRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentUploadUrlResult"
+
+  /documents:
+    post:
+      operationId: createDocument
+      summary: Register an uploaded document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  # ── PUBLIC: CALCULATOR ───────────────────────────────
+  /calculator:
+    get:
+      operationId: calculateRepayment
+      summary: Calculate loan repayment schedule
+      parameters:
+        - in: query
+          name: amount
+          schema:
+            type: number
+          required: true
+        - in: query
+          name: months
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepaymentSchedule"
+
+  # ── PUBLIC: CONTACT ──────────────────────────────────
+  /contact:
+    post:
+      operationId: submitContact
+      summary: Submit a contact/support message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMessage"
+
+  # ── ADMIN AUTH ────────────────────────────────────────
+  /admin/login:
+    post:
+      operationId: adminLogin
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCredentials"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      summary: Admin logout
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      summary: Get current admin session
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+
+  # ── ADMIN: DASHBOARD ──────────────────────────────────
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      summary: Get admin dashboard summary stats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /admin/stats/charts:
+    get:
+      operationId: getAdminCharts
+      summary: Get chart data for admin dashboard
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartData"
+
+  /admin/activity:
+    get:
+      operationId: getAdminActivity
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  # ── ADMIN: APPLICATIONS ───────────────────────────────
+  /admin/applications:
+    get:
+      operationId: getAdminApplications
+      summary: List all loan applications
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationList"
+
+  /admin/applications/{id}:
+    get:
+      operationId: getAdminApplication
+      summary: Get a single application with documents and loan
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationDetail"
+    patch:
+      operationId: updateAdminApplication
+      summary: Update application status / notes / approve
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  # ── ADMIN: LOANS ──────────────────────────────────────
+  /admin/loans:
+    get:
+      operationId: getAdminLoans
+      summary: List all active loans
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Loan"
+
+  /admin/loans/{id}:
+    get:
+      operationId: getAdminLoan
+      summary: Get a single loan with repayments and penalties
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanDetail"
+    patch:
+      operationId: updateAdminLoan
+      summary: Update loan status/notes and optionally send SMS
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+
+  /admin/loans/{id}/penalty:
+    post:
+      operationId: addLoanPenalty
+      summary: Add penalty to a loan
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenaltyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Penalty"
+
+  /admin/loans/{id}/repayment:
+    post:
+      operationId: recordRepayment
+      summary: Record a loan repayment
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepaymentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repayment"
+
+  /admin/loans/{id}/sms:
+    post:
+      operationId: sendLoanSms
+      summary: Send SMS notification to loan client
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  # ── ADMIN: OVERDUES ───────────────────────────────────
+  /admin/overdues:
+    get:
+      operationId: getAdminOverdues
+      summary: List overdue loans with days-overdue count
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OverdueLoan"
+
+  # ── ADMIN: DOCUMENTS ──────────────────────────────────
+  /admin/documents:
+    get:
+      operationId: getAdminDocuments
+      summary: List all KYC documents
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: applicationId
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+
+  /admin/documents/{id}:
+    patch:
+      operationId: updateAdminDocument
+      summary: Approve or reject a KYC document
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  # ── ADMIN: NOTIFICATIONS ─────────────────────────────
+  /admin/notifications:
+    get:
+      operationId: getAdminNotifications
+      summary: List all notifications sent
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+    post:
+      operationId: sendNotification
+      summary: Send a notification/SMS to a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # ── ADMIN: USERS ──────────────────────────────────────
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      summary: List all applicant users
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicantUser"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      summary: Get single user with full history
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicantUserDetail"
+
+  # ── ADMIN: AUDIT LOG ─────────────────────────────────
+  /admin/audit-logs:
+    get:
+      operationId: getAuditLogs
+      summary: Get audit log entries
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    OkResult:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: ["string", "null"]
+
+    # ── APPLICATION ──────────────────────────────────────
+    ApplicationInput:
+      type: object
+      required: [fullName, nationalId, phone, email, address, employmentType, employer, monthlyIncome, requestedAmount, repaymentMonths, payoutMethod]
+      properties:
+        fullName:
+          type: string
+        nationalId:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        employmentType:
+          type: string
+        employer:
+          type: string
+        monthlyIncome:
+          type: number
+        requestedAmount:
+          type: number
+        repaymentMonths:
+          type: integer
+        payoutMethod:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    Application:
+      type: object
+      required: [id, fullName, nationalId, phone, email, address, employmentType, employer, monthlyIncome, requestedAmount, repaymentMonths, payoutMethod, status, referenceNumber, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        nationalId:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        employmentType:
+          type: string
+        employer:
+          type: string
+        monthlyIncome:
+          type: number
+        requestedAmount:
+          type: number
+        repaymentMonths:
+          type: integer
+        payoutMethod:
+          type: string
+        status:
+          type: string
+        referenceNumber:
+          type: string
+        adminNotes:
+          type: ["string", "null"]
+        approvedAmount:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        status:
+          type: ["string", "null"]
+        adminNotes:
+          type: ["string", "null"]
+        approvedAmount:
+          type: ["number", "null"]
+        sendSms:
+          type: ["boolean", "null"]
+
+    ApplicationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Application"
+        - type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/Document"
+            loan:
+              type: ["object", "null"]
+              properties:
+                id:
+                  type: integer
+                status:
+                  type: string
+                outstandingBalance:
+                  type: number
+
+    ApplicationList:
+      type: object
+      required: [items, total, page, limit]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ApplicationTrackerResult:
+      type: object
+      required: [found]
+      properties:
+        found:
+          type: boolean
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApplicationStatusView"
+
+    ApplicationStatusView:
+      type: object
+      required: [id, referenceNumber, status, requestedAmount, repaymentMonths, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        referenceNumber:
+          type: string
+        fullName:
+          type: string
+        status:
+          type: string
+        requestedAmount:
+          type: number
+        repaymentMonths:
+          type: integer
+        approvedAmount:
+          type: ["number", "null"]
+        adminNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentStatus"
+        loanStatus:
+          type: ["string", "null"]
+        loanOutstanding:
+          type: ["number", "null"]
+        loanNextDue:
+          type: ["string", "null"]
+        loanTotalPaid:
+          type: ["number", "null"]
+
+    DocumentStatus:
+      type: object
+      required: [id, docType, status, uploadedAt]
+      properties:
+        id:
+          type: integer
+        docType:
+          type: string
+        status:
+          type: string
+        uploadedAt:
+          type: string
+
+    # ── DOCUMENTS ────────────────────────────────────────
+    DocumentUploadRequest:
+      type: object
+      required: [applicationId, docType, fileName, contentType]
+      properties:
+        applicationId:
+          type: integer
+        docType:
+          type: string
+        fileName:
+          type: string
+        contentType:
+          type: string
+
+    DocumentUploadUrlResult:
+      type: object
+      required: [uploadUrl, objectKey]
+      properties:
+        uploadUrl:
+          type: string
+        objectKey:
+          type: string
+
+    DocumentInput:
+      type: object
+      required: [applicationId, docType, objectKey, fileName]
+      properties:
+        applicationId:
+          type: integer
+        docType:
+          type: string
+        objectKey:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+
+    Document:
+      type: object
+      required: [id, applicationId, docType, objectKey, fileName, status, uploadedAt]
+      properties:
+        id:
+          type: integer
+        applicationId:
+          type: integer
+        docType:
+          type: string
+        objectKey:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        status:
+          type: string
+        adminNotes:
+          type: ["string", "null"]
+        uploadedAt:
+          type: string
+        reviewedAt:
+          type: ["string", "null"]
+
+    DocumentUpdate:
+      type: object
+      properties:
+        status:
+          type: ["string", "null"]
+        adminNotes:
+          type: ["string", "null"]
+
+    # ── REPAYMENT CALCULATOR ─────────────────────────────
+    RepaymentSchedule:
+      type: object
+      required: [principal, interestRate, months, monthlyPayment, totalRepayable, totalInterest, schedule]
+      properties:
+        principal:
+          type: number
+        interestRate:
+          type: number
+        months:
+          type: integer
+        monthlyPayment:
+          type: number
+        totalRepayable:
+          type: number
+        totalInterest:
+          type: number
+        schedule:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleItem"
+
+    ScheduleItem:
+      type: object
+      required: [month, payment, principal, interest, balance]
+      properties:
+        month:
+          type: integer
+        payment:
+          type: number
+        principal:
+          type: number
+        interest:
+          type: number
+        balance:
+          type: number
+
+    # ── CONTACT ──────────────────────────────────────────
+    ContactInput:
+      type: object
+      required: [name, email, phone, subject, message]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+
+    ContactMessage:
+      type: object
+      required: [id, name, email, subject, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+
+    # ── ADMIN AUTH ────────────────────────────────────────
+    AdminCredentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AdminSession:
+      type: object
+      required: [id, username, role]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+        fullName:
+          type: ["string", "null"]
+
+    # ── DASHBOARD ────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalApplications, pendingApplications, approvedApplications, rejectedApplications, activeLoans, overdueLoans, totalDisbursed, totalOutstanding, totalCollected, pendingDocuments, totalUsers]
+      properties:
+        totalApplications:
+          type: integer
+        pendingApplications:
+          type: integer
+        approvedApplications:
+          type: integer
+        rejectedApplications:
+          type: integer
+        activeLoans:
+          type: integer
+        overdueLoans:
+          type: integer
+        totalDisbursed:
+          type: number
+        totalOutstanding:
+          type: number
+        totalCollected:
+          type: number
+        pendingDocuments:
+          type: integer
+        totalUsers:
+          type: integer
+
+    ChartData:
+      type: object
+      required: [monthly, statusBreakdown]
+      properties:
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyChartItem"
+        statusBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusChartItem"
+
+    MonthlyChartItem:
+      type: object
+      required: [month, disbursed, collected, applications]
+      properties:
+        month:
+          type: string
+        disbursed:
+          type: number
+        collected:
+          type: number
+        applications:
+          type: integer
+
+    StatusChartItem:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+
+    ActivityItem:
+      type: object
+      required: [id, type, description, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        applicantName:
+          type: ["string", "null"]
+        amount:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+
+    # ── LOANS ────────────────────────────────────────────
+    Loan:
+      type: object
+      required: [id, applicationId, principalAmount, interestRate, repaymentMonths, monthlyPayment, totalRepayable, outstandingBalance, totalPaid, penaltyAmount, status, disbursedAt, dueDate, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        applicationId:
+          type: integer
+        applicantName:
+          type: ["string", "null"]
+        applicantPhone:
+          type: ["string", "null"]
+        applicantEmail:
+          type: ["string", "null"]
+        principalAmount:
+          type: number
+        interestRate:
+          type: number
+        repaymentMonths:
+          type: integer
+        monthlyPayment:
+          type: number
+        totalRepayable:
+          type: number
+        outstandingBalance:
+          type: number
+        totalPaid:
+          type: number
+        penaltyAmount:
+          type: number
+        status:
+          type: string
+        payoutMethod:
+          type: ["string", "null"]
+        disbursedAt:
+          type: string
+        dueDate:
+          type: string
+        nextDueDate:
+          type: ["string", "null"]
+        adminNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    LoanUpdate:
+      type: object
+      properties:
+        status:
+          type: ["string", "null"]
+        adminNotes:
+          type: ["string", "null"]
+        nextDueDate:
+          type: ["string", "null"]
+        sendSms:
+          type: ["boolean", "null"]
+        smsMessage:
+          type: ["string", "null"]
+
+    LoanDetail:
+      allOf:
+        - $ref: "#/components/schemas/Loan"
+        - type: object
+          properties:
+            repayments:
+              type: array
+              items:
+                $ref: "#/components/schemas/Repayment"
+            penalties:
+              type: array
+              items:
+                $ref: "#/components/schemas/Penalty"
+
+    OverdueLoan:
+      allOf:
+        - $ref: "#/components/schemas/Loan"
+        - type: object
+          required: [daysOverdue]
+          properties:
+            daysOverdue:
+              type: integer
+
+    PenaltyInput:
+      type: object
+      required: [amount, reason]
+      properties:
+        amount:
+          type: number
+        reason:
+          type: string
+
+    Penalty:
+      type: object
+      required: [id, loanId, amount, reason, createdAt]
+      properties:
+        id:
+          type: integer
+        loanId:
+          type: integer
+        amount:
+          type: number
+        reason:
+          type: string
+        createdAt:
+          type: string
+
+    RepaymentInput:
+      type: object
+      required: [amount, paymentMethod]
+      properties:
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        reference:
+          type: ["string", "null"]
+
+    Repayment:
+      type: object
+      required: [id, loanId, amount, paymentMethod, paidAt]
+      properties:
+        id:
+          type: integer
+        loanId:
+          type: integer
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        reference:
+          type: ["string", "null"]
+        paidAt:
+          type: string
+
+    SmsInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    # ── NOTIFICATIONS ────────────────────────────────────
+    NotificationInput:
+      type: object
+      required: [recipientPhone, message, type]
+      properties:
+        recipientPhone:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        message:
+          type: string
+        type:
+          type: string
+        applicationId:
+          type: ["integer", "null"]
+        loanId:
+          type: ["integer", "null"]
+
+    Notification:
+      type: object
+      required: [id, recipientPhone, message, type, status, createdAt]
+      properties:
+        id:
+          type: integer
+        recipientPhone:
+          type: string
+        recipientEmail:
+          type: ["string", "null"]
+        message:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        applicationId:
+          type: ["integer", "null"]
+        loanId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    # ── USERS ────────────────────────────────────────────
+    ApplicantUser:
+      type: object
+      required: [id, fullName, email, phone, nationalId, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        nationalId:
+          type: string
+        applicationCount:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    ApplicantUserDetail:
+      allOf:
+        - $ref: "#/components/schemas/ApplicantUser"
+        - type: object
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: "#/components/schemas/Application"
+
+    # ── AUDIT LOG ────────────────────────────────────────
+    AuditLog:
+      type: object
+      required: [id, action, entityType, entityId, adminUsername, createdAt]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: integer
+        adminUsername:
+          type: string
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string

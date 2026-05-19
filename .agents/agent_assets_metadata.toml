@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "GQSbsxA4WEWF2982ugbSg"
+uri = "file://artifacts/ellen-finance/public/hero.png"
+type = "image"
+title = "A Zimbabwean market owner smiling"
+
+[[generated]]
+id = "5r6lo1FkMCXnJHC1NwVHm"
+uri = "file://artifacts/ellen-finance/public/carpenter.png"
+type = "image"
+title = "A carpenter at work"
+
+[[generated]]
+id = "jVlanECOTeSkjoNZXyGUh"
+uri = "file://artifacts/ellen-finance/public/business-discussion.png"
+type = "image"
+title = "People discussing business outdoors"

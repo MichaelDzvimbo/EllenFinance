@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ellen Finance — Admin Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════ -->
+<div id="login-screen">
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+  <div class="login-wrap fade-up-s">
+    <div class="login-logo-box">
+      <div class="login-logo-icon">
+        <img src="data:image/png;base64,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" alt="Ellen Finance" />
+      </div>
+      <div class="login-tagline">Staff Administration Portal</div>
+    </div>
+    <div class="login-card" id="login-card">
+      <div class="field-wrap">
+        <label class="field-label">Username</label>
+        <input id="un" class="field-input" placeholder="staff username" autocomplete="username" />
+      </div>
+      <div class="field-wrap-last">
+        <label class="field-label">Password</label>
+        <input id="pw" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="btn-signin" onclick="doLogin()">Sign In to Portal →</button>
+      <div id="login-err" class="login-err" style="display:none">Invalid credentials. Please try again.</div>
+      <div class="demo-box">
+        <div class="demo-label">Demo Credentials</div>
+        <div class="demo-creds">admin / ellen2025</div>
+      </div>
+    </div>
+    <div class="login-footer">Ellen Finance © 2025 · Secured Staff Access</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MAIN APP
+══════════════════════════════════ -->
+<div id="app" style="display:none;flex-direction:column;min-height:100vh;">
+
+  <!-- Top Nav -->
+  <nav id="top-nav">
+    <div class="nav-brand">
+      <img class="nav-logo" src="data:image/png;base64,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" alt="Ellen Finance logo" />
+      <div>
+        <div class="nav-title">Ellen Finance</div>
+        <div class="nav-sub">Control Center</div>
+      </div>
+    </div>
+    <div class="nav-right">
+      <div id="pending-badge" class="nav-pending" style="display:none;">
+        <span class="pulse-dot"></span>
+        <span id="pending-count">0</span> Pending
+      </div>
+      <span id="nav-user" class="nav-user"></span>
+      <button class="btn-nav-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div id="main">
+
+    <!-- Page header -->
+    <div class="page-header fade-up">
+      <div>
+        <div class="page-eyebrow">Ellen Finance Control Center</div>
+        <h1 class="page-title">Loan Administration Dashboard</h1>
+        <p class="page-desc">Monitor applications, review documents, track repayments, approve loans and manage customers through one centralised operational platform.</p>
+      </div>
+      <div class="header-btns">
+        <button class="btn-gold" onclick="openDetail(APPS[0].id)">+ New Application</button>
+        <button class="btn-outline">Export Reports</button>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid fade-up" id="kpi-grid"></div>
+
+    <!-- Main 2-col grid -->
+    <div class="main-grid fade-up">
+
+      <!-- Application table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Recent Applications</div>
+            <div class="panel-sub">Monitor and process customer applications</div>
+          </div>
+          <div class="panel-controls">
+            <input class="ctrl-input" id="search-q" placeholder="Search customer, ID…" oninput="filterTable()" />
+            <select class="ctrl-select" id="filter-status" onchange="filterTable()">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="declined">Declined</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Loan Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Risk</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="app-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Side panel -->
+      <div class="side-stack">
+
+        <!-- Live activity -->
+        <div class="panel" style="padding:1.25rem;">
+          <div class="live-header">
+            <div>
+              <div class="panel-title">Live Activity</div>
+              <div class="panel-sub" style="margin-top:0.15rem;">Real-time operational updates</div>
+            </div>
+            <span class="live-dot" title="Live"></span>
+          </div>
+          <div class="activity-list" id="activity-list"></div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="panel" style="padding:1.25rem;">
+          <div class="panel-title" style="margin-bottom:0.9rem;">Quick Actions</div>
+          <div class="qa-grid">
+            <button class="qa-btn"><span class="qa-icon">✓</span>Approve Loans</button>
+            <button class="qa-btn"><span class="qa-icon">📊</span>View Reports</button>
+            <button class="qa-btn"><span class="qa-icon">👥</span>Manage Staff</button>
+            <button class="qa-btn"><span class="qa-icon">⚠️</span>Risk Analysis</button>
+            <button class="qa-btn"><span class="qa-icon">💳</span>Repayment Tracking</button>
+            <button class="qa-btn"><span class="qa-icon">💬</span>Customer Support</button>
+          </div>
+        </div>
+
+        <!-- Integration card -->
+        <div class="integration-card">
+          <div class="int-eyebrow">Website Integration</div>
+          <div class="int-title">Connected Platform Architecture</div>
+          <div class="int-list">
+            <div class="int-item"><span class="int-bullet">→</span><span class="int-text">Customer applications submitted on the Ellen Finance website automatically appear in the admin dashboard.</span></div>
+            <div class="int-item"><span class="int-bullet">→</span><span class="int-text">Uploaded IDs, proof of residence and supporting documents sync directly into review queues.</span></div>
+            <div class="int-item"><span class="int-bullet">→</span><span class="int-text">Approval decisions trigger WhatsApp and SMS notifications instantly.</span></div>
+            <div class="int-item"><span class="int-bullet">→</span><span class="int-text">Loan statuses update in real-time across customer and admin portals.</span></div>
+          </div>
+        </div>
+
+      </div><!-- /side-stack -->
+    </div><!-- /main-grid -->
+  </div><!-- /main -->
+
+  <div id="footer">Ellen Finance Administration System &bull; Secure Internal Operations Portal</div>
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════
+     DETAIL / APPROVE MODAL
+══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-title" id="modal-name"></div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div id="modal-tags" style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem;"></div>
+
+    <div class="loan-big" id="modal-amount"></div>
+    <div class="loan-purpose" id="modal-purpose"></div>
+
+    <div class="modal-info-grid" id="modal-info"></div>
+
+    <div id="modal-action-area"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TOAST
+══════════════════════════════════ -->
+<div id="toast"></div>
+
+
+<script src="admin.js"></script>
+</body>
+</html>

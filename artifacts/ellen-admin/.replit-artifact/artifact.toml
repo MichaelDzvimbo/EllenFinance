@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/admin/"
+title = "Ellen Finance Admin"
+version = "1.0.0"
+id = "artifacts/ellen-admin"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/admin/" ]
+localPort = 24456
+
+[services.development]
+run = "pnpm --filter @workspace/ellen-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ellen-admin", "run", "build" ]
+publicDir = "artifacts/ellen-admin/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24456"
+BASE_PATH = "/admin/"
