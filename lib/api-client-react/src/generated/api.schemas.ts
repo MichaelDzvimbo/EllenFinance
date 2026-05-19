@@ -387,6 +387,75 @@ export type ApplicantUserDetail = ApplicantUser & {
   applications?: Application[];
 };
 
+export interface UserRegistrationInput {
+  fullName: string;
+  email: string;
+  nationalId: string;
+  address: string;
+  occupation: string;
+  password: string;
+}
+
+export interface UserLoginInput {
+  email: string;
+  password: string;
+}
+
+export interface UserProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  nationalId: string;
+  address: string;
+  occupation: string;
+  kycStatus: string;
+  createdAt: string;
+}
+
+export interface UserAuthResult {
+  token: string;
+  user: UserProfile;
+}
+
+export interface UserDashboard {
+  user: UserProfile;
+  applications: Application[];
+  documents: Document[];
+  kycStatus: string;
+}
+
+export interface UserApplicationInput {
+  requestedAmount: number;
+  repaymentMonths: number;
+  payoutMethod: string;
+  employmentType: string;
+  employer: string;
+  monthlyIncome: number;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface UserApplicationResult {
+  id: number;
+  referenceNumber: string;
+  status: string;
+  requestedAmount: number;
+  repaymentMonths: number;
+  createdAt: string;
+}
+
+export interface UserDocumentUploadRequest {
+  docType: string;
+  fileName: string;
+  contentType: string;
+}
+
+export interface UserDocumentInput {
+  docType: string;
+  objectKey: string;
+  fileName: string;
+}
+
 export interface AuditLog {
   id: number;
   action: string;

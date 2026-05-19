@@ -134,6 +134,156 @@ export const SubmitContactBody = zod.object({
 
 
 /**
+ * @summary Register a new user account
+ */
+export const RegisterUserBody = zod.object({
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "nationalId": zod.string(),
+  "address": zod.string(),
+  "occupation": zod.string(),
+  "password": zod.string()
+})
+
+
+/**
+ * @summary Login with email and password
+ */
+export const LoginUserBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginUserResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "nationalId": zod.string(),
+  "address": zod.string(),
+  "occupation": zod.string(),
+  "kycStatus": zod.string(),
+  "createdAt": zod.string()
+})
+})
+
+
+/**
+ * @summary Logout current user
+ */
+export const LogoutUserResponse = zod.object({
+  "ok": zod.boolean(),
+  "message": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get current user profile
+ */
+export const GetUserMeResponse = zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "nationalId": zod.string(),
+  "address": zod.string(),
+  "occupation": zod.string(),
+  "kycStatus": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Get authenticated user dashboard data
+ */
+export const GetUserDashboardResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "nationalId": zod.string(),
+  "address": zod.string(),
+  "occupation": zod.string(),
+  "kycStatus": zod.string(),
+  "createdAt": zod.string()
+}),
+  "applications": zod.array(zod.object({
+  "id": zod.number(),
+  "fullName": zod.string(),
+  "nationalId": zod.string(),
+  "phone": zod.string(),
+  "email": zod.string(),
+  "address": zod.string(),
+  "employmentType": zod.string(),
+  "employer": zod.string(),
+  "monthlyIncome": zod.number(),
+  "requestedAmount": zod.number(),
+  "repaymentMonths": zod.number(),
+  "payoutMethod": zod.string(),
+  "status": zod.string(),
+  "referenceNumber": zod.string(),
+  "adminNotes": zod.string().nullish(),
+  "approvedAmount": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})),
+  "documents": zod.array(zod.object({
+  "id": zod.number(),
+  "applicationId": zod.number(),
+  "docType": zod.string(),
+  "objectKey": zod.string(),
+  "fileName": zod.string(),
+  "fileSize": zod.number().nullish(),
+  "status": zod.string(),
+  "adminNotes": zod.string().nullish(),
+  "uploadedAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})),
+  "kycStatus": zod.string()
+})
+
+
+/**
+ * @summary Submit loan application (requires user auth)
+ */
+export const SubmitUserApplicationBody = zod.object({
+  "requestedAmount": zod.number(),
+  "repaymentMonths": zod.number(),
+  "payoutMethod": zod.string(),
+  "employmentType": zod.string(),
+  "employer": zod.string(),
+  "monthlyIncome": zod.number(),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Request presigned upload URL for KYC doc (requires user auth)
+ */
+export const RequestUserDocumentUploadUrlBody = zod.object({
+  "docType": zod.string(),
+  "fileName": zod.string(),
+  "contentType": zod.string()
+})
+
+export const RequestUserDocumentUploadUrlResponse = zod.object({
+  "uploadUrl": zod.string(),
+  "objectKey": zod.string()
+})
+
+
+/**
+ * @summary Register uploaded KYC document (requires user auth)
+ */
+export const CreateUserDocumentBody = zod.object({
+  "docType": zod.string(),
+  "objectKey": zod.string(),
+  "fileName": zod.string()
+})
+
+
+/**
  * @summary Admin login
  */
 export const AdminLoginBody = zod.object({

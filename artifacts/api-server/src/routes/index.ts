@@ -6,6 +6,7 @@ import applicationsRouter from "./public/applications";
 import documentsRouter from "./public/documents";
 import calculatorRouter from "./public/calculator";
 import contactRouter from "./public/contact";
+import userAuthRouter from "./public/userAuth";
 
 // Admin routes
 import adminAuthRouter from "./admin/auth";
@@ -22,11 +23,12 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 
-// Public
+// Public + User Auth
 router.use(applicationsRouter);
 router.use(documentsRouter);
 router.use(calculatorRouter);
 router.use(contactRouter);
+router.use(userAuthRouter);
 
 // Admin
 router.use(adminAuthRouter);

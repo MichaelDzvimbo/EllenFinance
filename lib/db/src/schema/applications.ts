@@ -4,9 +4,10 @@ import { z } from "zod/v4";
 
 export const applicationsTable = pgTable("applications", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id"),
   fullName: text("full_name").notNull(),
   nationalId: varchar("national_id", { length: 50 }).notNull(),
-  phone: varchar("phone", { length: 20 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull().default(""),
   email: text("email").notNull(),
   address: text("address").notNull(),
   employmentType: varchar("employment_type", { length: 50 }).notNull(),

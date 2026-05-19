@@ -135,6 +135,133 @@ paths:
               schema:
                 $ref: "#/components/schemas/ContactMessage"
 
+  # ── USER AUTH ─────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: registerUser
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAuthResult"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAuthResult"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      summary: Logout current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /auth/me:
+    get:
+      operationId: getUserMe
+      summary: Get current user profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /user/dashboard:
+    get:
+      operationId: getUserDashboard
+      summary: Get authenticated user dashboard data
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDashboard"
+
+  /user/applications:
+    post:
+      operationId: submitUserApplication
+      summary: Submit loan application (requires user auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserApplicationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserApplicationResult"
+
+  /user/documents/upload-url:
+    post:
+      operationId: requestUserDocumentUploadUrl
+      summary: Request presigned upload URL for KYC doc (requires user auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDocumentUploadRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentUploadUrlResult"
+
+  /user/documents:
+    post:
+      operationId: createUserDocument
+      summary: Register uploaded KYC document (requires user auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
   # ── ADMIN AUTH ────────────────────────────────────────
   /admin/login:
     post:
@@ -1228,6 +1355,138 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Application"
+
+    # ── USER AUTH SCHEMAS ─────────────────────────────────
+    UserRegistrationInput:
+      type: object
+      required: [fullName, email, nationalId, address, occupation, password]
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        nationalId:
+          type: string
+        address:
+          type: string
+        occupation:
+          type: string
+        password:
+          type: string
+
+    UserLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    UserProfile:
+      type: object
+      required: [id, fullName, email, nationalId, address, occupation, kycStatus, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        email:
+          type: string
+        nationalId:
+          type: string
+        address:
+          type: string
+        occupation:
+          type: string
+        kycStatus:
+          type: string
+        createdAt:
+          type: string
+
+    UserAuthResult:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+
+    UserDashboard:
+      type: object
+      required: [user, applications, documents, kycStatus]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+        kycStatus:
+          type: string
+
+    UserApplicationInput:
+      type: object
+      required: [requestedAmount, repaymentMonths, payoutMethod, employmentType, employer, monthlyIncome]
+      properties:
+        requestedAmount:
+          type: number
+        repaymentMonths:
+          type: integer
+        payoutMethod:
+          type: string
+        employmentType:
+          type: string
+        employer:
+          type: string
+        monthlyIncome:
+          type: number
+        notes:
+          type: ["string", "null"]
+
+    UserApplicationResult:
+      type: object
+      required: [id, referenceNumber, status, requestedAmount, repaymentMonths, createdAt]
+      properties:
+        id:
+          type: integer
+        referenceNumber:
+          type: string
+        status:
+          type: string
+        requestedAmount:
+          type: number
+        repaymentMonths:
+          type: integer
+        createdAt:
+          type: string
+
+    UserDocumentUploadRequest:
+      type: object
+      required: [docType, fileName, contentType]
+      properties:
+        docType:
+          type: string
+        fileName:
+          type: string
+        contentType:
+          type: string
+
+    UserDocumentInput:
+      type: object
+      required: [docType, objectKey, fileName]
+      properties:
+        docType:
+          type: string
+        objectKey:
+          type: string
+        fileName:
+          type: string
 
     # ── AUDIT LOG ────────────────────────────────────────
     AuditLog:

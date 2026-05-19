@@ -1,41 +1,9 @@
 import { Link } from "wouter";
-import { useState, useEffect, useRef } from "react";
-import { ArrowRight, Shield, Clock, Users, ChevronDown, CheckCircle, Phone, Star } from "lucide-react";
-import { useCalculateRepayment } from "@workspace/api-client-react";
-
-function AnimatedCounter({ target, duration = 2000, suffix = "" }: { target: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        let start = 0;
-        const step = target / (duration / 16);
-        const timer = setInterval(() => {
-          start += step;
-          if (start >= target) { setCount(target); clearInterval(timer); }
-          else setCount(Math.floor(start));
-        }, 16);
-      }
-    });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-
-  return <div ref={ref}>{count.toLocaleString()}{suffix}</div>;
-}
+import { ArrowRight, Shield, Clock, Users, CheckCircle, Phone, Star, Download, FileText } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export default function Home() {
-  const [calcAmount, setCalcAmount] = useState(1000);
-  const [calcMonths, setCalcMonths] = useState(6);
-
-  const { data: schedule } = useCalculateRepayment(
-    { amount: calcAmount, months: calcMonths },
-    { query: { enabled: calcAmount > 0 && calcMonths > 0 } }
-  );
+  const { user } = useAuth();
 
   return (
     <div className="overflow-hidden">
@@ -56,40 +24,24 @@ export default function Home() {
               <span className="text-[#c9972c]">starts here.</span>
             </h1>
             <p className="text-white/70 text-xl md:text-2xl leading-relaxed mb-10 max-w-xl font-light">
-              Accessible microloans for Zimbabwean entrepreneurs and families. Apply in minutes, receive funds via EcoCash or InnBucks.
+              Accessible microloans for Zimbabwean entrepreneurs and families. Create a free account and access funding in days.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/apply" className="inline-flex items-center justify-center gap-2 bg-[#c9972c] hover:bg-[#b8861f] text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[#c9972c]/30 hover:-translate-y-0.5">
-                Apply Now <ArrowRight size={20} />
-              </Link>
-              <Link href="/status" className="inline-flex items-center justify-center gap-2 border-2 border-white/30 hover:border-white/60 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all duration-300 backdrop-blur-sm">
-                Track Application
-              </Link>
+              {user ? (
+                <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 bg-[#c9972c] hover:bg-[#b8861f] text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[#c9972c]/30 hover:-translate-y-0.5">
+                  Go to My Dashboard <ArrowRight size={20} />
+                </Link>
+              ) : (
+                <>
+                  <Link href="/auth" className="inline-flex items-center justify-center gap-2 bg-[#c9972c] hover:bg-[#b8861f] text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all duration-300 hover:shadow-lg hover:shadow-[#c9972c]/30 hover:-translate-y-0.5">
+                    Create Free Account <ArrowRight size={20} />
+                  </Link>
+                  <Link href="/auth?tab=login" className="inline-flex items-center justify-center gap-2 border-2 border-white/30 hover:border-white/60 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all duration-300 backdrop-blur-sm">
+                    Sign In
+                  </Link>
+                </>
+              )}
             </div>
-          </div>
-        </div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
-          <ChevronDown size={32} />
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="bg-white py-16 border-b">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { label: "Loans Disbursed", target: 2847, suffix: "+" },
-              { label: "Happy Clients", target: 1920, suffix: "+" },
-              { label: "USD Disbursed", target: 4.2, suffix: "M+" },
-              { label: "Approval Rate", target: 78, suffix: "%" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="font-serif text-4xl md:text-5xl font-bold text-[#2b4a7a] mb-2">
-                  <AnimatedCounter target={stat.target} suffix={stat.suffix} />
-                </div>
-                <div className="text-muted-foreground text-sm font-medium uppercase tracking-wider">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -99,14 +51,14 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#2b4a7a] mb-4">How it works</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">From application to funds in your account — a transparent, dignified process.</p>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">From registration to funds in your account — a transparent, four-step process.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
-              { step: "01", title: "Apply Online", desc: "Fill out the simple application form with your personal and employment details in under 5 minutes." },
-              { step: "02", title: "Submit Documents", desc: "Upload your National ID, proof of address, and income documents securely through our portal." },
-              { step: "03", title: "Get Approved", desc: "Our team reviews your application and you receive a decision within 24-48 hours via SMS and email." },
-              { step: "04", title: "Receive Funds", desc: "Approved funds are sent directly to your EcoCash or InnBucks wallet within hours of approval." },
+              { step: "01", title: "Create Account", desc: "Register with your full name, email, National ID, address and occupation. It takes under 2 minutes." },
+              { step: "02", title: "Upload KYC Docs", desc: "Submit your National ID, proof of address and payslip securely through your dashboard." },
+              { step: "03", title: "Get Approved", desc: "Our team reviews your documents and application. You receive a decision within 24–48 hours via SMS." },
+              { step: "04", title: "Receive Funds", desc: "Approved funds land in your EcoCash or InnBucks wallet within hours of approval." },
             ].map((item, i) => (
               <div key={i} className="relative">
                 {i < 3 && <div className="hidden md:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-[#c9972c]/40 to-transparent z-0" />}
@@ -121,59 +73,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Calculator */}
-      <section className="py-24 bg-[#2b4a7a]">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-white mb-4">Loan Calculator</h2>
-              <p className="text-white/70 text-lg">See exactly what you'll pay — no hidden fees, no surprises.</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-3xl p-8 md:p-12 border border-white/20">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-8">
-                  <div>
-                    <label className="text-white/80 text-sm font-medium block mb-3">Loan Amount: <span className="text-[#c9972c] font-bold text-lg">${calcAmount.toLocaleString()}</span></label>
-                    <input type="range" min={100} max={10000} step={100} value={calcAmount}
-                      onChange={(e) => setCalcAmount(Number(e.target.value))}
-                      className="w-full h-2 rounded-full bg-white/20 accent-[#c9972c] cursor-pointer" />
-                    <div className="flex justify-between text-white/40 text-xs mt-1"><span>$100</span><span>$10,000</span></div>
-                  </div>
-                  <div>
-                    <label className="text-white/80 text-sm font-medium block mb-3">Repayment Period: <span className="text-[#c9972c] font-bold text-lg">{calcMonths} months</span></label>
-                    <input type="range" min={1} max={24} step={1} value={calcMonths}
-                      onChange={(e) => setCalcMonths(Number(e.target.value))}
-                      className="w-full h-2 rounded-full bg-white/20 accent-[#c9972c] cursor-pointer" />
-                    <div className="flex justify-between text-white/40 text-xs mt-1"><span>1 month</span><span>24 months</span></div>
-                  </div>
-                </div>
-                <div className="bg-white/10 rounded-2xl p-6 flex flex-col justify-center space-y-5 border border-white/10">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className="text-white/70">Monthly Payment</span>
-                    <span className="text-[#c9972c] font-bold text-2xl font-serif">${schedule?.monthlyPayment.toFixed(2) ?? "—"}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Total Repayable</span>
-                    <span className="text-white font-semibold">${schedule?.totalRepayable.toFixed(2) ?? "—"}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70">Interest (8% p.m.)</span>
-                    <span className="text-white/80">${schedule?.interestTotal.toFixed(2) ?? "—"}</span>
-                  </div>
-                  <div className="flex justify-between items-center border-t border-white/10 pt-4">
-                    <span className="text-white/70">Principal</span>
-                    <span className="text-white">${calcAmount.toLocaleString()}</span>
-                  </div>
-                  <Link href="/apply" className="w-full bg-[#c9972c] hover:bg-[#b8861f] text-white font-semibold py-3 rounded-xl text-center transition-colors mt-2 block">
-                    Apply for This Loan
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Features */}
       <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
@@ -183,7 +82,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { icon: Shield, title: "Secure & Regulated", desc: "Your personal information is encrypted and protected. We operate under strict financial regulations to keep your data safe." },
-              { icon: Clock, title: "Fast Approvals", desc: "Our streamlined process means decisions in 24-48 hours. No long queues, no unnecessary delays — just efficient service." },
+              { icon: Clock, title: "Fast Approvals", desc: "Our streamlined digital process means decisions in 24–48 hours. No long queues, no unnecessary delays." },
               { icon: Users, title: "Real Human Support", desc: "Every application is reviewed by our Zimbabwean team. We understand local contexts and community needs deeply." },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="group p-8 rounded-2xl border border-border hover:border-[#c9972c]/40 hover:shadow-lg transition-all duration-300">
@@ -198,53 +97,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Payment Methods */}
-      <section className="py-16 bg-background border-t border-b">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm uppercase tracking-widest mb-8">Receive funds via</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
-              <img src="/ecocash.png" alt="EcoCash" className="h-10 object-contain" />
-              <div className="text-left">
-                <div className="font-bold text-[#2b4a7a]">EcoCash</div>
-                <div className="text-xs text-muted-foreground">+263 78 328 6316</div>
-              </div>
-            </div>
-            <div className="text-muted-foreground font-medium">or</div>
-            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
-              <img src="/innbucks.png" alt="InnBucks" className="h-10 object-contain" />
-              <div className="text-left">
-                <div className="font-bold text-[#2b4a7a]">InnBucks</div>
-                <div className="text-xs text-muted-foreground">Account: Lawrence Maira</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 bg-white">
+      {/* Loan Application PDF Download */}
+      <section className="py-20 bg-[#2b4a7a]">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="font-serif text-4xl font-bold text-[#2b4a7a] mb-4">What our clients say</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: "Chiedza Moyo", role: "Harare, Small Business Owner", quote: "Ellen Finance helped me expand my grocery store when the banks said no. The process was smooth and the team was incredibly supportive throughout." },
-              { name: "Takudzwa Banda", role: "Bulawayo, Hardware Trader", quote: "I was skeptical at first, but the transparency of the process won me over. My loan was approved in less than 48 hours and the money arrived on my EcoCash same day." },
-              { name: "Rudo Chikwanda", role: "Msasa, Teacher", quote: "The repayment schedule was clear from the start — no surprises. I could plan around it. Ellen Finance treats you like a person, not just a number." },
-            ].map((t, i) => (
-              <div key={i} className="bg-background rounded-2xl p-8 border border-border">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => <Star key={j} size={16} className="fill-[#c9972c] text-[#c9972c]" />)}
-                </div>
-                <p className="text-foreground/80 leading-relaxed mb-6 font-serif italic">"{t.quote}"</p>
-                <div>
-                  <div className="font-bold text-[#2b4a7a]">{t.name}</div>
-                  <div className="text-muted-foreground text-sm">{t.role}</div>
-                </div>
-              </div>
-            ))}
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6">
+              <FileText className="text-[#c9972c]" size={36} />
+            </div>
+            <h2 className="font-serif text-4xl font-bold text-white mb-4">Prefer a Paper Form?</h2>
+            <p className="text-white/70 text-lg mb-8 max-w-lg mx-auto">Download our official Zimbabwean Microfinance Loan Application Form. Fill it out and visit our offices at 6th Avenue, Harare.</p>
+            <a
+              href="/api/loan-application-form.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-[#c9972c] hover:bg-[#b8861f] text-white font-bold px-10 py-4 rounded-xl text-lg transition-all hover:shadow-xl hover:-translate-y-0.5"
+            >
+              <Download size={22} /> Download Application Form (PDF)
+            </a>
+            <p className="text-white/40 text-sm mt-4">PDF • Microfinance Loan Application — Ellen Finance Zimbabwe</p>
           </div>
         </div>
       </section>
@@ -270,9 +140,54 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <Link href="/apply" className="inline-flex items-center gap-2 bg-white text-[#27a362] font-bold px-10 py-4 rounded-xl text-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
-              Start Your Application <ArrowRight size={20} />
+            <Link href="/auth" className="inline-flex items-center gap-2 bg-white text-[#27a362] font-bold px-10 py-4 rounded-xl text-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
+              Create Free Account <ArrowRight size={20} />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Payment Methods */}
+      <section className="py-16 bg-background border-t border-b">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-muted-foreground text-sm uppercase tracking-widest mb-8">Receive funds via</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
+            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
+              <img src="/ecocash.png" alt="EcoCash" className="h-10 object-contain" />
+              <div className="text-left"><div className="font-bold text-[#2b4a7a]">EcoCash</div><div className="text-xs text-muted-foreground">+263 78 328 6316</div></div>
+            </div>
+            <div className="text-muted-foreground font-medium">or</div>
+            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
+              <img src="/innbucks.png" alt="InnBucks" className="h-10 object-contain" />
+              <div className="text-left"><div className="font-bold text-[#2b4a7a]">InnBucks</div><div className="text-xs text-muted-foreground">Account: Lawrence Maira</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-4xl font-bold text-[#2b4a7a] mb-4">What our clients say</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { name: "Chiedza Moyo", role: "Harare, Small Business Owner", quote: "Ellen Finance helped me expand my grocery store when the banks said no. The online process was smooth and the team was incredibly supportive." },
+              { name: "Takudzwa Banda", role: "Bulawayo, Hardware Trader", quote: "I registered online, uploaded my documents and had my loan approved in 48 hours. Money was on my EcoCash the same day. Truly remarkable." },
+              { name: "Rudo Chikwanda", role: "Msasa, Teacher", quote: "The dashboard made everything clear — I could see exactly what was happening with my application and when my next payment was due. No surprises." },
+            ].map((t, i) => (
+              <div key={i} className="bg-background rounded-2xl p-8 border border-border">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, j) => <Star key={j} size={16} className="fill-[#c9972c] text-[#c9972c]" />)}
+                </div>
+                <p className="text-foreground/80 leading-relaxed mb-6 font-serif italic">"{t.quote}"</p>
+                <div>
+                  <div className="font-bold text-[#2b4a7a]">{t.name}</div>
+                  <div className="text-muted-foreground text-sm">{t.role}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -283,8 +198,8 @@ export default function Home() {
           <h2 className="font-serif text-4xl font-bold text-[#2b4a7a] mb-4">Ready to grow?</h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">Join thousands of Zimbabweans who have used Ellen Finance to fund their ambitions.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/apply" className="inline-flex items-center justify-center gap-2 bg-[#2b4a7a] hover:bg-[#1e3560] text-white font-semibold px-8 py-4 rounded-lg transition-colors">
-              Apply for a Loan <ArrowRight size={18} />
+            <Link href="/auth" className="inline-flex items-center justify-center gap-2 bg-[#2b4a7a] hover:bg-[#1e3560] text-white font-semibold px-8 py-4 rounded-lg transition-colors">
+              Create Free Account <ArrowRight size={18} />
             </Link>
             <Link href="/contact" className="inline-flex items-center justify-center gap-2 border border-border hover:border-[#2b4a7a] text-foreground font-semibold px-8 py-4 rounded-lg transition-colors">
               <Phone size={18} /> Contact Us
