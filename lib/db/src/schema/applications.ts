@@ -21,6 +21,8 @@ export const applicationsTable = pgTable("applications", {
   adminNotes: text("admin_notes"),
   approvedAmount: numeric("approved_amount", { precision: 12, scale: 2 }),
   notes: text("notes"),
+  assignedOfficerId: integer("assigned_officer_id"),
+  assignedAt: timestamp("assigned_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

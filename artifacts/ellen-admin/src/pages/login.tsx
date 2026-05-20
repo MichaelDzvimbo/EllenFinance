@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAdminLogin } from "@workspace/api-client-react";
+import { useAdminLogin, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -20,7 +20,10 @@ export default function Login() {
     login.mutate({
       data: { username, password }
     }, {
-      onSuccess: () => {
+      onSuccess: (data: any) => {
+        const token = data?.token ?? "";
+        localStorage.setItem("admin_token", token);
+        setAuthTokenGetter(() => localStorage.getItem("admin_token"));
         setLocation("/dashboard");
       },
       onError: (err: any) => {

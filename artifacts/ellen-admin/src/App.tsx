@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
-
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Applications from "@/pages/applications/index";
@@ -16,8 +16,12 @@ import Notifications from "@/pages/notifications";
 import Users from "@/pages/users/index";
 import UserDetail from "@/pages/users/[id]";
 import AuditLogs from "@/pages/audit-logs";
+import LoanOfficers from "@/pages/loan-officers";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
+
+// Wire up admin token on app boot so requests after a page refresh carry auth
+setAuthTokenGetter(() => localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token"));
 
 const queryClient = new QueryClient();
 
@@ -41,6 +45,7 @@ function AppRoutes() {
       <Route path="/users"><Layout><Users /></Layout></Route>
       <Route path="/users/:id">{(params) => <Layout><UserDetail params={params} /></Layout>}</Route>
       
+      <Route path="/loan-officers"><Layout><LoanOfficers /></Layout></Route>
       <Route path="/audit-logs"><Layout><AuditLogs /></Layout></Route>
       <Route path="/settings"><Layout><Settings /></Layout></Route>
       

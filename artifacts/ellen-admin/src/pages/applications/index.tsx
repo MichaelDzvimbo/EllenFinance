@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useGetAdminApplications } from "@workspace/api-client-react";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, UserCheck, RefreshCw } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 export default function Applications() {
@@ -19,9 +20,22 @@ export default function Applications() {
     status: status !== "all" ? status : undefined,
   });
 
+  const queryClient = useQueryClient();
+
+  const autoDistribute = useMutation({
+    mutationFn: () => fetch("/api/admin/loan-officers/auto-distribute", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token") ?? ""}`
+      }
+    }).then(r => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["applications"] }),
+  });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved": return <Badge className="bg-green-600/20 text-green-500 hover:bg-green-600/20 border-green-600/20">Approved</Badge>;
+      case "disbursed": return <Badge className="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/20 border-emerald-600/20">Disbursed</Badge>;
       case "rejected": return <Badge variant="destructive" className="bg-red-600/20 text-red-500 hover:bg-red-600/20 border-red-600/20">Rejected</Badge>;
       case "pending": return <Badge variant="outline" className="bg-yellow-600/20 text-yellow-500 hover:bg-yellow-600/20 border-yellow-600/20">Pending</Badge>;
       case "under_review": return <Badge variant="outline" className="bg-blue-600/20 text-blue-500 hover:bg-blue-600/20 border-blue-600/20">Under Review</Badge>;
@@ -33,6 +47,15 @@ export default function Applications() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-serif font-medium tracking-tight">Applications</h2>
+        <Button
+          variant="outline"
+          className="border-border gap-2"
+          onClick={() => autoDistribute.mutate()}
+          disabled={autoDistribute.isPending}
+        >
+          <UserCheck className="h-4 w-4" />
+          {autoDistribute.isPending ? "Distributing..." : "Auto-Assign Officers"}
+        </Button>
       </div>
 
       <Card className="bg-card border-border">
@@ -59,6 +82,7 @@ export default function Applications() {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="under_review">Under Review</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="disbursed">Disbursed</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>

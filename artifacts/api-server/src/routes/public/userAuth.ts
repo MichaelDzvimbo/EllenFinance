@@ -1,18 +1,20 @@
-import { Router, type IRouter } from "express";
-import { eq, desc, sql } from "drizzle-orm";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { eq, desc, inArray } from "drizzle-orm";
 import { db, usersTable, applicationsTable, documentsTable, loansTable } from "@workspace/db";
-import { z } from "zod";
+import { z } from "zod/v4";
 import {
   createUserSession,
   destroyUserSession,
   getUserSession,
   hashPassword,
   verifyPassword,
-  requireUser,
-  type UserSession,
 } from "../../lib/userSession";
 
 const router: IRouter = Router();
+
+interface AuthedRequest extends Request {
+  userSession: { userId: number; email: string; fullName: string };
+}
 
 const RegisterBody = z.object({
   fullName: z.string().min(2),
@@ -69,48 +71,53 @@ function generateRef(): string {
   return `EF-${ts}-${rand}`;
 }
 
+function requireUser(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace("Bearer ", "") ?? "";
+  if (!token) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const session = getUserSession(token);
+  if (!session) {
+    res.status(401).json({ error: "Invalid or expired session — please log in again" });
+    return;
+  }
+  (req as AuthedRequest).userSession = session;
+  next();
+}
+
 // ── REGISTER ──────────────────────────────────────────────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors });
+    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
     return;
   }
 
   const { fullName, email, nationalId, address, occupation, password } = parsed.data;
 
-  const existing = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.email, email.toLowerCase()))
-    .limit(1);
-
-  if (existing.length > 0) {
+  const [existing] = await db.select({ id: usersTable.id }).from(usersTable)
+    .where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  if (existing) {
     res.status(409).json({ error: "An account with this email already exists" });
     return;
   }
 
-  const existingId = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.nationalId, nationalId))
-    .limit(1);
-
-  if (existingId.length > 0) {
+  const [existingId] = await db.select({ id: usersTable.id }).from(usersTable)
+    .where(eq(usersTable.nationalId, nationalId)).limit(1);
+  if (existingId) {
     res.status(409).json({ error: "An account with this National ID already exists" });
     return;
   }
 
-  const passwordHash = hashPassword(password);
-
-  const [user] = await db
-    .insert(usersTable)
-    .values({ fullName, email: email.toLowerCase(), nationalId, address, occupation, passwordHash })
-    .returning();
+  const [user] = await db.insert(usersTable).values({
+    fullName, email: email.toLowerCase(), nationalId, address, occupation,
+    passwordHash: hashPassword(password),
+  }).returning();
 
   const token = createUserSession(user.id, user.email, user.fullName);
   req.log.info({ userId: user.id }, "User registered");
-
   res.status(201).json({ token, user: serializeUser(user) });
 });
 
@@ -123,12 +130,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const { email, password } = parsed.data;
-
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email.toLowerCase()))
-    .limit(1);
+  const [user] = await db.select().from(usersTable)
+    .where(eq(usersTable.email, email.toLowerCase())).limit(1);
 
   if (!user || !verifyPassword(password, user.passwordHash)) {
     res.status(401).json({ error: "Invalid email or password" });
@@ -137,76 +140,48 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   const token = createUserSession(user.id, user.email, user.fullName);
   req.log.info({ userId: user.id }, "User logged in");
-
   res.json({ token, user: serializeUser(user) });
 });
 
 // ── LOGOUT ────────────────────────────────────────────────────────────────
 router.post("/auth/logout", (req, res): void => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.replace("Bearer ", "") ?? "";
+  const token = req.headers.authorization?.replace("Bearer ", "") ?? "";
   if (token) destroyUserSession(token);
   res.json({ ok: true });
 });
 
 // ── ME ────────────────────────────────────────────────────────────────────
 router.get("/auth/me", requireUser, async (req, res): Promise<void> => {
-  const session = (req as Request & { userSession: UserSession }).userSession;
-
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
-    .limit(1);
-
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
-
+  const { userId } = (req as AuthedRequest).userSession;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
   res.json(serializeUser(user));
 });
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
 router.get("/user/dashboard", requireUser, async (req, res): Promise<void> => {
-  const session = (req as Request & { userSession: UserSession }).userSession;
+  const { userId } = (req as AuthedRequest).userSession;
 
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
-    .limit(1);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
-
-  const apps = await db
-    .select()
-    .from(applicationsTable)
-    .where(eq(applicationsTable.userId, session.userId))
+  const apps = await db.select().from(applicationsTable)
+    .where(eq(applicationsTable.userId, userId))
     .orderBy(desc(applicationsTable.createdAt));
 
   const appIds = apps.map((a) => a.id);
-
-  let docs: typeof documentsTable.$inferSelect[] = [];
-  let loans: typeof loansTable.$inferSelect[] = [];
+  let docs: (typeof documentsTable.$inferSelect)[] = [];
+  let loans: (typeof loansTable.$inferSelect)[] = [];
 
   if (appIds.length > 0) {
-    docs = await db
-      .select()
-      .from(documentsTable)
-      .where(sql`${documentsTable.applicationId} = ANY(${sql`ARRAY[${sql.join(appIds.map((id) => sql`${id}`), sql`, `)}]::int[]`})`);
-
-    loans = await db
-      .select()
-      .from(loansTable)
-      .where(sql`${loansTable.applicationId} = ANY(${sql`ARRAY[${sql.join(appIds.map((id) => sql`${id}`), sql`, `)}]::int[]`})`);
+    [docs, loans] = await Promise.all([
+      db.select().from(documentsTable).where(inArray(documentsTable.applicationId, appIds)),
+      db.select().from(loansTable).where(inArray(loansTable.applicationId, appIds)),
+    ]);
   }
 
   const loanByAppId = new Map(loans.map((l) => [l.applicationId, l]));
-  const docsByAppId = new Map<number, typeof docs>();
+  const docsByAppId = new Map<number, (typeof documentsTable.$inferSelect)[]>();
   for (const d of docs) {
     if (!docsByAppId.has(d.applicationId)) docsByAppId.set(d.applicationId, []);
     docsByAppId.get(d.applicationId)!.push(d);
@@ -222,16 +197,11 @@ router.get("/user/dashboard", requireUser, async (req, res): Promise<void> => {
       requestedAmount: Number(app.requestedAmount),
       repaymentMonths: app.repaymentMonths,
       approvedAmount: app.approvedAmount ? Number(app.approvedAmount) : null,
-      adminNotes: app.adminNotes,
+      adminNotes: app.adminNotes ?? null,
       payoutMethod: app.payoutMethod,
       createdAt: app.createdAt.toISOString(),
       updatedAt: app.updatedAt.toISOString(),
-      documents: appDocs.map((d) => ({
-        id: d.id,
-        docType: d.docType,
-        status: d.status,
-        uploadedAt: d.uploadedAt.toISOString(),
-      })),
+      documents: appDocs.map((d) => ({ id: d.id, docType: d.docType, status: d.status, uploadedAt: d.uploadedAt.toISOString() })),
       loanStatus: loan?.status ?? null,
       loanOutstanding: loan ? Number(loan.outstandingBalance) : null,
       loanNextDue: loan?.nextDueDate ? loan.nextDueDate.toISOString() : null,
@@ -239,37 +209,20 @@ router.get("/user/dashboard", requireUser, async (req, res): Promise<void> => {
     };
   });
 
-  const allDocs = docs.map((d) => ({
-    id: d.id,
-    applicationId: d.applicationId,
-    docType: d.docType,
-    status: d.status,
-    uploadedAt: d.uploadedAt.toISOString(),
-  }));
-
   res.json({
     user: serializeUser(user),
     applications,
-    documents: allDocs,
+    documents: docs.map((d) => ({ id: d.id, applicationId: d.applicationId, docType: d.docType, status: d.status, uploadedAt: d.uploadedAt.toISOString() })),
     kycStatus: user.kycStatus,
   });
 });
 
-// ── SUBMIT LOAN APPLICATION (authenticated) ───────────────────────────────
+// ── SUBMIT LOAN APPLICATION ───────────────────────────────────────────────
 router.post("/user/applications", requireUser, async (req, res): Promise<void> => {
-  const session = (req as Request & { userSession: UserSession }).userSession;
+  const { userId } = (req as AuthedRequest).userSession;
 
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
-    .limit(1);
-
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
-
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
   if (user.kycStatus !== "approved") {
     res.status(403).json({ error: "KYC documents must be approved before applying for a loan" });
     return;
@@ -277,33 +230,30 @@ router.post("/user/applications", requireUser, async (req, res): Promise<void> =
 
   const parsed = ApplicationBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors });
+    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
     return;
   }
 
   const { requestedAmount, repaymentMonths, payoutMethod, employmentType, employer, monthlyIncome, notes } = parsed.data;
 
-  const [app] = await db
-    .insert(applicationsTable)
-    .values({
-      userId: session.userId,
-      fullName: user.fullName,
-      nationalId: user.nationalId,
-      phone: "",
-      email: user.email,
-      address: user.address,
-      employmentType,
-      employer,
-      monthlyIncome: String(monthlyIncome),
-      requestedAmount: String(requestedAmount),
-      repaymentMonths,
-      payoutMethod,
-      notes: notes ?? null,
-      referenceNumber: generateRef(),
-    })
-    .returning();
+  const [app] = await db.insert(applicationsTable).values({
+    userId,
+    fullName: user.fullName,
+    nationalId: user.nationalId,
+    phone: "",
+    email: user.email,
+    address: user.address,
+    employmentType,
+    employer,
+    monthlyIncome: String(monthlyIncome),
+    requestedAmount: String(requestedAmount),
+    repaymentMonths,
+    payoutMethod,
+    notes: notes ?? null,
+    referenceNumber: generateRef(),
+  }).returning();
 
-  req.log.info({ id: app.id, userId: session.userId }, "User loan application submitted");
+  req.log.info({ id: app.id, userId }, "User loan application submitted");
   res.status(201).json({
     id: app.id,
     referenceNumber: app.referenceNumber,
@@ -314,17 +264,14 @@ router.post("/user/applications", requireUser, async (req, res): Promise<void> =
   });
 });
 
-// ── REQUEST DOCUMENT UPLOAD URL (authenticated) ───────────────────────────
+// ── REQUEST DOCUMENT UPLOAD URL ───────────────────────────────────────────
 router.post("/user/documents/upload-url", requireUser, async (req, res): Promise<void> => {
-  const session = (req as Request & { userSession: UserSession }).userSession;
+  const { userId } = (req as AuthedRequest).userSession;
   const parsed = DocUploadBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
 
   const { docType, fileName, contentType } = parsed.data;
-  const objectKey = `kyc/user-${session.userId}/${docType}/${Date.now()}-${fileName}`;
+  const objectKey = `kyc/user-${userId}/${docType}/${Date.now()}-${fileName}`;
 
   const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
   let uploadUrl: string;
@@ -332,53 +279,58 @@ router.post("/user/documents/upload-url", requireUser, async (req, res): Promise
     const { getUploadUrl } = await import("../../lib/storage");
     uploadUrl = await getUploadUrl(objectKey, contentType);
   } else {
-    uploadUrl = `/api/stub-upload/${objectKey}`;
+    uploadUrl = `/api/stub-upload/${encodeURIComponent(objectKey)}`;
   }
 
   res.json({ uploadUrl, objectKey });
 });
 
-// ── REGISTER UPLOADED DOCUMENT (authenticated) ────────────────────────────
+// ── REGISTER UPLOADED DOCUMENT ────────────────────────────────────────────
 router.post("/user/documents", requireUser, async (req, res): Promise<void> => {
-  const session = (req as Request & { userSession: UserSession }).userSession;
+  const { userId } = (req as AuthedRequest).userSession;
   const parsed = DocRegisterBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
 
   const { docType, objectKey, fileName } = parsed.data;
 
-  const apps = await db
-    .select({ id: applicationsTable.id })
-    .from(applicationsTable)
-    .where(eq(applicationsTable.userId, session.userId))
-    .orderBy(desc(applicationsTable.createdAt))
-    .limit(1);
+  // Find most recent application for this user
+  const [latestApp] = await db.select({ id: applicationsTable.id }).from(applicationsTable)
+    .where(eq(applicationsTable.userId, userId))
+    .orderBy(desc(applicationsTable.createdAt)).limit(1);
 
-  const applicationId = apps[0]?.id ?? 0;
-
-  if (applicationId === 0) {
-    res.status(400).json({ error: "No application found — please register first" });
-    return;
+  // If no application exists, create a placeholder
+  let applicationId: number;
+  if (!latestApp) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    const [placeholder] = await db.insert(applicationsTable).values({
+      userId,
+      fullName: user.fullName,
+      nationalId: user.nationalId,
+      phone: "",
+      email: user.email,
+      address: user.address,
+      employmentType: "pending",
+      employer: "Pending",
+      monthlyIncome: "0",
+      requestedAmount: "0",
+      repaymentMonths: 1,
+      payoutMethod: "ecocash",
+      referenceNumber: generateRef(),
+      status: "kyc_only",
+    }).returning();
+    applicationId = placeholder.id;
+  } else {
+    applicationId = latestApp.id;
   }
 
-  const [doc] = await db
-    .insert(documentsTable)
-    .values({ applicationId, docType, objectKey, fileName })
-    .returning();
+  const [doc] = await db.insert(documentsTable).values({ applicationId, docType, objectKey, fileName }).returning();
 
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
-    .limit(1);
-
-  if (user && user.kycStatus === "not_submitted") {
-    await db
-      .update(usersTable)
-      .set({ kycStatus: "pending", updatedAt: new Date() })
-      .where(eq(usersTable.id, session.userId));
+  // Advance KYC status
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (user && (user.kycStatus === "not_submitted" || user.kycStatus === "rejected")) {
+    await db.update(usersTable).set({ kycStatus: "pending", updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
   }
 
   res.status(201).json({

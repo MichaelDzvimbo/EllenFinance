@@ -21,7 +21,7 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   const token = createSession(username);
   await logAudit("LOGIN", "admin", null, `Admin ${username} logged in`);
 
-  res.json({ token, username, role: "admin" });
+  res.json({ token, username, role: "admin", fullName: "Administrator" });
 });
 
 router.post("/admin/logout", async (req, res): Promise<void> => {
@@ -39,7 +39,7 @@ router.get("/admin/me", requireAdmin, async (req, res): Promise<void> => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  res.json({ token, username: session.username, role: session.role });
+  res.json({ token, username: session.username, role: session.role, fullName: "Administrator" });
 });
 
 export default router;

@@ -406,7 +406,7 @@ export default function Dashboard() {
                             <FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="ecocash">EcoCash (+263 78 328 6316)</SelectItem>
-                              <SelectItem value="innbucks">InnBucks (Lawrence Maira)</SelectItem>
+                              <SelectItem value="innbucks">InnBucks</SelectItem>
                             </SelectContent>
                           </Select><FormMessage />
                         </FormItem>

@@ -109,14 +109,14 @@ export default function Contact() {
                   <div>
                     <p className="font-bold text-sm">EcoCash</p>
                     <p className="text-white/70 text-xs">+263 78 328 6316</p>
-                    <p className="text-white/70 text-xs">Lawrence Maira</p>
+                    <p className="text-white/70 text-xs">Ellen Finance Account</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <img src="/innbucks.png" alt="InnBucks" className="h-7 object-contain bg-white rounded p-0.5" />
                   <div>
                     <p className="font-bold text-sm">InnBucks</p>
-                    <p className="text-white/70 text-xs">Account: Lawrence Maira</p>
+                    <p className="text-white/70 text-xs">Ellen Finance Account</p>
                   </div>
                 </div>
               </div>

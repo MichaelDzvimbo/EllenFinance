@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, CreditCard, AlertTriangle, FileBox, Bell, Users, Settings, Activity, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, CreditCard, AlertTriangle, FileBox, Bell, Users, Settings, Activity, LogOut, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetAdminMe, useAdminLogout } from "@workspace/api-client-react";
 
@@ -18,7 +18,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSuccess: () => setLocation("/login")
+      onSuccess: () => {
+        localStorage.removeItem("admin_token");
+        sessionStorage.removeItem("admin_token");
+        setLocation("/login");
+      }
     });
   };
 
@@ -30,6 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/documents", label: "Documents", icon: FileBox },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/users", label: "Users", icon: Users },
+    { href: "/loan-officers", label: "Loan Officers", icon: UserCog },
     { href: "/audit-logs", label: "Audit Logs", icon: Activity },
     { href: "/settings", label: "Settings", icon: Settings },
   ];

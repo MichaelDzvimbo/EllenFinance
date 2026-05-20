@@ -7,6 +7,8 @@ import documentsRouter from "./public/documents";
 import calculatorRouter from "./public/calculator";
 import contactRouter from "./public/contact";
 import userAuthRouter from "./public/userAuth";
+import loanFormRouter from "./public/loanForm";
+import loanOfficersRouter from "./admin/loanOfficers";
 
 // Admin routes
 import adminAuthRouter from "./admin/auth";
@@ -29,9 +31,11 @@ router.use(documentsRouter);
 router.use(calculatorRouter);
 router.use(contactRouter);
 router.use(userAuthRouter);
+router.use(loanFormRouter);
 
 // Admin
 router.use(adminAuthRouter);
+router.use(loanOfficersRouter);
 router.use(adminDashboardRouter);
 router.use(adminApplicationsRouter);
 router.use(adminLoansRouter);
