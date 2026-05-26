@@ -13,9 +13,9 @@ router.get("/admin/audit-logs", requireAdmin, async (req, res): Promise<void> =>
       id: l.id,
       action: l.action,
       entityType: l.entityType,
-      entityId: l.entityId,
-      details: l.details,
-      performedBy: l.performedBy,
+      entityId: l.entityId != null ? Number(l.entityId) : null,
+      adminUsername: l.performedBy ?? "admin",
+      details: l.details ?? null,
       createdAt: l.createdAt.toISOString(),
     }))
   );
