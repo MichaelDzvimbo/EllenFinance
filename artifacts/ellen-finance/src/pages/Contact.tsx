@@ -104,19 +104,21 @@ export default function Contact() {
             <div className="bg-[#2b4a7a] rounded-2xl p-6 text-white">
               <h3 className="font-serif font-bold text-[#c9972c] mb-4">Repayment Details</h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
+                <a
+                  href="tel:153110783286316%23"
+                  className="flex items-center gap-3 hover:bg-white/10 rounded-xl p-2 -m-2 transition-colors group"
+                  title="Tap to pay via EcoCash"
+                >
                   <img src="/ecocash.png" alt="EcoCash" className="h-7 object-contain bg-white rounded p-0.5" />
                   <div>
                     <p className="font-bold text-sm">EcoCash</p>
-                    <p className="text-white/70 text-xs">+263 78 328 6316</p>
-                    <p className="text-white/70 text-xs">Ellen Finance Account</p>
+                    <p className="text-white/70 text-xs group-hover:text-[#c9972c] transition-colors">Tap to make a payment</p>
                   </div>
-                </div>
+                </a>
                 <div className="flex items-center gap-3">
                   <img src="/innbucks.png" alt="InnBucks" className="h-7 object-contain bg-white rounded p-0.5" />
                   <div>
                     <p className="font-bold text-sm">InnBucks</p>
-                    <p className="text-white/70 text-xs">Ellen Finance Account</p>
                   </div>
                 </div>
               </div>
