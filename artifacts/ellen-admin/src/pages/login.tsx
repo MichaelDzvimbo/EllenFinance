@@ -1,39 +1,54 @@
-import React, { useState } from "react";
-import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useAdminLogin, setAuthTokenGetter } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAdminLogin, setAuthTokenGetter } from '@workspace/api-client-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const login = useAdminLogin();
-  
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token') ?? sessionStorage.getItem('admin_token');
+    if (token) setLocation('/dashboard');
+  }, [setLocation]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    login.mutate({
-      data: { username, password }
-    }, {
-      onSuccess: (data: any) => {
-        const token = data?.token ?? "";
-        localStorage.setItem("admin_token", token);
-        setAuthTokenGetter(() => localStorage.getItem("admin_token"));
-        setLocation("/dashboard");
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Login Failed",
-          description: err.message || "Invalid credentials",
-          variant: "destructive"
-        });
+    if (!username.trim() || !password.trim()) {
+      toast({ title: 'Missing credentials', description: 'Please enter both username and password.', variant: 'destructive' });
+      return;
+    }
+    login.mutate(
+      { data: { username: username.trim(), password } },
+      {
+        onSuccess: (data: { token?: string }) => {
+          const token = data?.token ?? '';
+          if (!token) {
+            toast({ title: 'Login error', description: 'No token received from server.', variant: 'destructive' });
+            return;
+          }
+          localStorage.setItem('admin_token', token);
+          setAuthTokenGetter(() => localStorage.getItem('admin_token'));
+          setLocation('/dashboard');
+        },
+        onError: (err: { message?: string }) => {
+          toast({
+            title: 'Login Failed',
+            description: err?.message ?? 'Invalid username or password. Please try again.',
+            variant: 'destructive',
+          });
+        },
       }
-    });
+    );
   };
 
   return (
@@ -47,32 +62,43 @@ export default function Login() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
-              <Input 
-                id="username" 
-                placeholder="admin" 
-                className="bg-background" 
+              <Input
+                id="username"
+                name="username"
+                placeholder="admin"
+                className="bg-background"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
-                required 
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••" 
-                className="bg-background" 
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                className="bg-background"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                required 
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
               />
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={login.isPending}>
-              {login.isPending ? "Signing in..." : "Sign In"}
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={login.isPending}
+            >
+              {login.isPending ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
         </CardContent>
