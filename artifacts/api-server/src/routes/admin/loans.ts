@@ -19,28 +19,40 @@ import {
 
 const router: IRouter = Router();
 
-function serializeLoan(l: typeof loansTable.$inferSelect, app?: typeof applicationsTable.$inferSelect | null) {
+function computeLoanFields(
+  l: typeof loansTable.$inferSelect,
+  app?: typeof applicationsTable.$inferSelect | null,
+  penaltyTotal = 0
+) {
+  const principal = Number(l.principalAmount);
+  const rate = Number(l.interestRate) / 100;
+  const repaymentMonths = app?.repaymentMonths ?? 12;
+  // Flat-rate simple-interest calculation (standard for microfinance)
+  const totalRepayable = principal * (1 + rate);
+  const monthlyPayment = repaymentMonths > 0 ? totalRepayable / repaymentMonths : 0;
+
   return {
     id: l.id,
     applicationId: l.applicationId,
-    status: l.status,
-    principalAmount: Number(l.principalAmount),
-    outstandingBalance: Number(l.outstandingBalance),
+    applicantName: app?.fullName ?? null,
+    applicantPhone: app?.phone ?? null,
+    applicantEmail: app?.email ?? null,
+    principalAmount: principal,
     interestRate: Number(l.interestRate),
-    startDate: l.startDate.toISOString(),
-    endDate: l.endDate.toISOString(),
-    nextDueDate: l.nextDueDate ? l.nextDueDate.toISOString() : null,
+    repaymentMonths,
+    monthlyPayment: Math.round(monthlyPayment * 100) / 100,
+    totalRepayable: Math.round(totalRepayable * 100) / 100,
+    outstandingBalance: Number(l.outstandingBalance),
     totalPaid: Number(l.totalPaid),
-    notes: l.notes,
+    penaltyAmount: penaltyTotal,
+    status: l.status,
+    payoutMethod: app?.payoutMethod ?? null,
+    disbursedAt: l.startDate.toISOString(),
+    dueDate: l.endDate.toISOString(),
+    nextDueDate: l.nextDueDate ? l.nextDueDate.toISOString() : null,
+    adminNotes: l.notes ?? null,
     createdAt: l.createdAt.toISOString(),
     updatedAt: l.updatedAt.toISOString(),
-    ...(app
-      ? {
-          clientName: app.fullName,
-          clientPhone: app.phone,
-          clientEmail: app.email,
-        }
-      : {}),
   };
 }
 
@@ -74,7 +86,7 @@ router.get("/admin/loans", requireAdmin, async (req, res): Promise<void> => {
     return true;
   });
 
-  res.json(filtered.map((r) => serializeLoan(r.loan, r.app)));
+  res.json(filtered.map((r) => computeLoanFields(r.loan, r.app)));
 });
 
 router.get("/admin/loans/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -100,15 +112,16 @@ router.get("/admin/loans/:id", requireAdmin, async (req, res): Promise<void> => 
     db.select().from(penaltiesTable).where(eq(penaltiesTable.loanId, row.loan.id)).orderBy(desc(penaltiesTable.createdAt)),
   ]);
 
+  const penaltyTotal = pens.reduce((sum, p) => sum + Number(p.amount), 0);
+
   res.json({
-    ...serializeLoan(row.loan, row.app),
+    ...computeLoanFields(row.loan, row.app, penaltyTotal),
     repayments: reps.map((r) => ({
       id: r.id,
       loanId: r.loanId,
       amount: Number(r.amount),
       paymentMethod: r.paymentMethod,
-      referenceNumber: r.referenceNumber,
-      notes: r.notes,
+      reference: r.referenceNumber ?? null,
       paidAt: r.paidAt.toISOString(),
     })),
     penalties: pens.map((p) => ({
@@ -135,7 +148,12 @@ router.patch("/admin/loans/:id", requireAdmin, async (req, res): Promise<void> =
   }
 
   const { sendSms: shouldSms, ...rest } = parsed.data;
-  const updates = { ...rest, updatedAt: new Date() };
+
+  // Map adminNotes → notes for DB
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (rest.status != null) updates.status = rest.status;
+  if ("adminNotes" in rest && rest.adminNotes != null) updates.notes = rest.adminNotes;
+  if ("nextDueDate" in rest && rest.nextDueDate != null) updates.nextDueDate = new Date(rest.nextDueDate as string);
 
   const [updated] = await db
     .update(loansTable)
@@ -148,16 +166,15 @@ router.patch("/admin/loans/:id", requireAdmin, async (req, res): Promise<void> =
     return;
   }
 
+  const [app] = await db.select().from(applicationsTable).where(eq(applicationsTable.id, updated.applicationId));
+
   await logAudit("UPDATE_LOAN", "loan", updated.id, `Status: ${rest.status ?? "unchanged"}`);
 
-  if (shouldSms) {
-    const [app] = await db.select().from(applicationsTable).where(eq(applicationsTable.id, updated.applicationId));
-    if (app) {
-      await smsSend(app.phone, `Dear ${app.fullName}, your Ellen Finance loan status has been updated to: ${updated.status?.toUpperCase()}.`);
-    }
+  if (shouldSms && app) {
+    await smsSend(app.phone, `Dear ${app.fullName}, your Ellen Finance loan status has been updated to: ${updated.status?.toUpperCase()}.`);
   }
 
-  res.json(serializeLoan(updated));
+  res.json(computeLoanFields(updated, app ?? null));
 });
 
 router.post("/admin/loans/:id/penalty", requireAdmin, async (req, res): Promise<void> => {
@@ -180,7 +197,6 @@ router.post("/admin/loans/:id/penalty", requireAdmin, async (req, res): Promise<
     .values({ loanId: params.data.id, amount: String(amount), reason })
     .returning();
 
-  // Add penalty to outstanding balance
   await db
     .update(loansTable)
     .set({ outstandingBalance: sql`outstanding_balance + ${amount}`, updatedAt: new Date() })
@@ -217,7 +233,6 @@ router.post("/admin/loans/:id/repayment", requireAdmin, async (req, res): Promis
     .values({ loanId: params.data.id, amount: String(amount), paymentMethod, referenceNumber, notes })
     .returning();
 
-  // Reduce outstanding balance
   const [updatedLoan] = await db
     .update(loansTable)
     .set({
@@ -228,7 +243,6 @@ router.post("/admin/loans/:id/repayment", requireAdmin, async (req, res): Promis
     .where(eq(loansTable.id, params.data.id))
     .returning();
 
-  // Mark as completed if fully paid
   if (updatedLoan && Number(updatedLoan.outstandingBalance) <= 0) {
     await db.update(loansTable).set({ status: "completed", updatedAt: new Date() }).where(eq(loansTable.id, params.data.id));
   }
@@ -240,8 +254,7 @@ router.post("/admin/loans/:id/repayment", requireAdmin, async (req, res): Promis
     loanId: repayment.loanId,
     amount: Number(repayment.amount),
     paymentMethod: repayment.paymentMethod,
-    referenceNumber: repayment.referenceNumber,
-    notes: repayment.notes,
+    reference: repayment.referenceNumber ?? null,
     paidAt: repayment.paidAt.toISOString(),
   });
 });
