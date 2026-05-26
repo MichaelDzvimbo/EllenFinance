@@ -1,6 +1,8 @@
 import { Link } from "wouter";
-import { ArrowRight, Shield, Clock, Users, CheckCircle, Phone, Star, Download, FileText } from "lucide-react";
+import { ArrowRight, Shield, Clock, Users, CheckCircle, Phone, Star, Download, FileText, PhoneCall } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+
+const ECOCASH_TEL = "tel:153110783286316%23";
 
 export default function Home() {
   const { user } = useAuth();
@@ -152,14 +154,27 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <p className="text-muted-foreground text-sm uppercase tracking-widest mb-8">Receive funds via</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
+            {/* EcoCash — tapping/clicking opens the phone dialer */}
+            <a
+              href={ECOCASH_TEL}
+              className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm hover:shadow-md hover:border-[#c9972c]/40 transition-all group cursor-pointer"
+              title="Tap to pay via EcoCash"
+            >
               <img src="/ecocash.png" alt="EcoCash" className="h-10 object-contain" />
-              <div className="text-left"><div className="font-bold text-[#2b4a7a]">EcoCash</div><div className="text-xs text-muted-foreground">+263 78 328 6316</div></div>
-            </div>
+              <div className="text-left">
+                <div className="font-bold text-[#2b4a7a]">EcoCash</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 group-hover:text-[#c9972c] transition-colors">
+                  <PhoneCall size={11} /> Tap to pay
+                </div>
+              </div>
+            </a>
             <div className="text-muted-foreground font-medium">or</div>
+            {/* InnBucks */}
             <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
               <img src="/innbucks.png" alt="InnBucks" className="h-10 object-contain" />
-              <div className="text-left"><div className="font-bold text-[#2b4a7a]">InnBucks</div><div className="text-xs text-muted-foreground">Ellen Finance Account</div></div>
+              <div className="text-left">
+                <div className="font-bold text-[#2b4a7a]">InnBucks</div>
+              </div>
             </div>
           </div>
         </div>
