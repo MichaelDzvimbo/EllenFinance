@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "crypto";
+
+const SESSION_SECRET = process.env.SESSION_SECRET ?? "ellen-finance-secret-2025";
 
 export interface UserSession {
   userId: number;
@@ -7,20 +9,40 @@ export interface UserSession {
   fullName: string;
 }
 
-const userSessions = new Map<string, UserSession>();
-
-export function createUserSession(userId: number, email: string, fullName: string): string {
-  const token = `usr-${userId}-${Date.now()}-${randomBytes(8).toString("hex")}`;
-  userSessions.set(token, { userId, email, fullName });
-  return token;
+function signToken(payload: object): string {
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const hmac = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  return `${data}.${hmac}`;
 }
 
-export function destroyUserSession(token: string): void {
-  userSessions.delete(token);
+function verifyToken<T>(token: string): T | null {
+  try {
+    const dotIdx = token.lastIndexOf(".");
+    if (dotIdx === -1) return null;
+    const data = token.slice(0, dotIdx);
+    const hmac = token.slice(dotIdx + 1);
+    const expected = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+    const hBuf = Buffer.from(hmac, "base64url");
+    const eBuf = Buffer.from(expected, "base64url");
+    if (hBuf.length !== eBuf.length || !timingSafeEqual(hBuf, eBuf)) return null;
+    return JSON.parse(Buffer.from(data, "base64url").toString()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export function createUserSession(userId: number, email: string, fullName: string): string {
+  return signToken({ userId, email, fullName, iat: Date.now() });
+}
+
+export function destroyUserSession(_token: string): void {
+  // Tokens are stateless; nothing to destroy server-side
 }
 
 export function getUserSession(token: string): UserSession | undefined {
-  return userSessions.get(token);
+  const payload = verifyToken<{ userId: number; email: string; fullName: string }>(token);
+  if (!payload || !payload.userId) return undefined;
+  return { userId: payload.userId, email: payload.email, fullName: payload.fullName };
 }
 
 export function hashPassword(password: string): string {
@@ -32,6 +54,7 @@ export function hashPassword(password: string): string {
 export function verifyPassword(password: string, stored: string): boolean {
   try {
     const [salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
     const hashBuffer = Buffer.from(hash, "hex");
     const verify = scryptSync(password, salt, 64);
     return timingSafeEqual(hashBuffer, verify);
