@@ -19,24 +19,35 @@ router.get("/admin/overdues", requireAdmin, async (req, res): Promise<void> => {
       ? Math.floor((now.getTime() - r.loan.nextDueDate.getTime()) / (1000 * 60 * 60 * 24))
       : 0;
 
+    const principal = Number(r.loan.principalAmount);
+    const rate = Number(r.loan.interestRate) / 100;
+    const repaymentMonths = r.app?.repaymentMonths ?? 12;
+    const totalRepayable = principal * (1 + rate);
+    const monthlyPayment = repaymentMonths > 0 ? totalRepayable / repaymentMonths : 0;
+
     return {
       id: r.loan.id,
       applicationId: r.loan.applicationId,
-      status: r.loan.status,
-      principalAmount: Number(r.loan.principalAmount),
-      outstandingBalance: Number(r.loan.outstandingBalance),
+      applicantName: r.app?.fullName ?? "Unknown",
+      applicantPhone: r.app?.phone ?? "",
+      applicantEmail: r.app?.email ?? "",
+      principalAmount: principal,
       interestRate: Number(r.loan.interestRate),
-      startDate: r.loan.startDate.toISOString(),
-      endDate: r.loan.endDate.toISOString(),
-      nextDueDate: r.loan.nextDueDate ? r.loan.nextDueDate.toISOString() : null,
+      repaymentMonths,
+      monthlyPayment: Math.round(monthlyPayment * 100) / 100,
+      totalRepayable: Math.round(totalRepayable * 100) / 100,
+      outstandingBalance: Number(r.loan.outstandingBalance),
       totalPaid: Number(r.loan.totalPaid),
-      notes: r.loan.notes,
+      penaltyAmount: 0,
+      status: r.loan.status,
+      payoutMethod: r.app?.payoutMethod ?? null,
+      disbursedAt: r.loan.startDate.toISOString(),
+      dueDate: r.loan.endDate.toISOString(),
+      nextDueDate: r.loan.nextDueDate ? r.loan.nextDueDate.toISOString() : null,
+      adminNotes: r.loan.notes ?? null,
       createdAt: r.loan.createdAt.toISOString(),
       updatedAt: r.loan.updatedAt.toISOString(),
       daysOverdue,
-      clientName: r.app?.fullName ?? "Unknown",
-      clientPhone: r.app?.phone ?? "",
-      clientEmail: r.app?.email ?? "",
     };
   });
 
