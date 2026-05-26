@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,8 @@ async function apiPost(path: string, body: unknown) {
 export default function Auth() {
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<"register" | "login">("register");
-  const [showPass, setShowPass] = useState(false);
+  const [showRegPass, setShowRegPass] = useState(false);
+  const [showLoginPass, setShowLoginPass] = useState(false);
   const { user, login } = useAuth();
   const { toast } = useToast();
 
@@ -116,12 +117,14 @@ export default function Auth() {
         {/* Tabs */}
         <div className="flex bg-white rounded-2xl border p-1 mb-6 shadow-sm">
           <button
+            type="button"
             onClick={() => setTab("register")}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "register" ? "bg-[#2b4a7a] text-white shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
             Create Account
           </button>
           <button
+            type="button"
             onClick={() => setTab("login")}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "login" ? "bg-[#2b4a7a] text-white shadow" : "text-muted-foreground hover:text-foreground"}`}
           >
@@ -132,39 +135,58 @@ export default function Auth() {
         <div className="bg-white rounded-2xl border shadow-sm p-8">
           {tab === "register" ? (
             <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-5">
+              <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-5" autoComplete="on">
                 <FormField control={registerForm.control} name="fullName" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input placeholder="e.g. Chiedza Moyo" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Chiedza Moyo"
+                        autoComplete="name"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={registerForm.control} name="email" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        autoComplete="email"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={registerForm.control} name="nationalId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>National ID Number</FormLabel>
-                    <FormControl><Input placeholder="e.g. 63-1234567A78" {...field} /></FormControl>
+                    <FormControl>
+                      <Input placeholder="e.g. 63-1234567A78" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={registerForm.control} name="address" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Residential Address</FormLabel>
-                    <FormControl><Input placeholder="14 Avondale Road, Harare" {...field} /></FormControl>
+                    <FormControl>
+                      <Input placeholder="14 Avondale Road, Harare" autoComplete="street-address" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={registerForm.control} name="occupation" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Occupation</FormLabel>
-                    <FormControl><Input placeholder="e.g. Teacher, Business Owner, Trader" {...field} /></FormControl>
+                    <FormControl>
+                      <Input placeholder="e.g. Teacher, Business Owner, Trader" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -173,9 +195,22 @@ export default function Auth() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showPass ? "text" : "password"} placeholder="Min. 6 characters" {...field} />
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                          {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                        <Input
+                          type={showRegPass ? "text" : "password"}
+                          placeholder="Min. 6 characters"
+                          autoComplete="new-password"
+                          className="pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          tabIndex={-1}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setShowRegPass((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={showRegPass ? "Hide password" : "Show password"}
+                        >
+                          {showRegPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </FormControl>
@@ -185,7 +220,14 @@ export default function Auth() {
                 <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
-                    <FormControl><Input type="password" placeholder="Repeat your password" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Repeat your password"
+                        autoComplete="new-password"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -199,8 +241,12 @@ export default function Auth() {
                   ))}
                 </div>
 
-                <Button type="submit" disabled={registerForm.formState.isSubmitting} className="w-full bg-[#2b4a7a] hover:bg-[#1e3560] text-white h-12 text-base">
-                  {registerForm.formState.isSubmitting ? "Creating account..." : <>Create Account <ArrowRight size={18} className="ml-2" /></>}
+                <Button
+                  type="submit"
+                  disabled={registerForm.formState.isSubmitting}
+                  className="w-full bg-[#2b4a7a] hover:bg-[#1e3560] text-white h-12 text-base"
+                >
+                  {registerForm.formState.isSubmitting ? "Creating account..." : <span className="flex items-center justify-center gap-2">Create Account <ArrowRight size={18} /></span>}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
@@ -211,11 +257,18 @@ export default function Auth() {
             </Form>
           ) : (
             <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-5">
+              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-5" autoComplete="on">
                 <FormField control={loginForm.control} name="email" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="your@email.com" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        autoComplete="email"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -224,9 +277,22 @@ export default function Auth() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showPass ? "text" : "password"} placeholder="Your password" {...field} />
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                          {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                        <Input
+                          type={showLoginPass ? "text" : "password"}
+                          placeholder="Your password"
+                          autoComplete="current-password"
+                          className="pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          tabIndex={-1}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setShowLoginPass((v) => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={showLoginPass ? "Hide password" : "Show password"}
+                        >
+                          {showLoginPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </FormControl>
@@ -234,8 +300,12 @@ export default function Auth() {
                   </FormItem>
                 )} />
 
-                <Button type="submit" disabled={loginForm.formState.isSubmitting} className="w-full bg-[#2b4a7a] hover:bg-[#1e3560] text-white h-12 text-base">
-                  {loginForm.formState.isSubmitting ? "Signing in..." : <>Sign In <ArrowRight size={18} className="ml-2" /></>}
+                <Button
+                  type="submit"
+                  disabled={loginForm.formState.isSubmitting}
+                  className="w-full bg-[#2b4a7a] hover:bg-[#1e3560] text-white h-12 text-base"
+                >
+                  {loginForm.formState.isSubmitting ? "Signing in..." : <span className="flex items-center justify-center gap-2">Sign In <ArrowRight size={18} /></span>}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
