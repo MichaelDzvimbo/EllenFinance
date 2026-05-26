@@ -445,7 +445,8 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              applications.map((app) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              applications.map((app: any) => {
                 const statusCfg = STATUS_CONFIG[app.status as string] ?? STATUS_CONFIG.pending;
                 const Icon = statusCfg.icon;
                 const appDocs = (app.documents as Array<{ docType: string; status: string }>) ?? [];
@@ -462,7 +463,7 @@ export default function Dashboard() {
                     </div>
                     <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div><p className="text-xs text-muted-foreground mb-1">Amount</p><p className="font-bold text-[#2b4a7a]">${(app.requestedAmount as number).toLocaleString()}</p></div>
-                      {app.approvedAmount && <div><p className="text-xs text-muted-foreground mb-1">Approved</p><p className="font-bold text-emerald-600">${(app.approvedAmount as number).toLocaleString()}</p></div>}
+                      {app.approvedAmount != null && <div><p className="text-xs text-muted-foreground mb-1">Approved</p><p className="font-bold text-emerald-600">${(app.approvedAmount as number).toLocaleString()}</p></div>}
                       <div><p className="text-xs text-muted-foreground mb-1">Term</p><p className="font-semibold">{app.repaymentMonths as number} months</p></div>
                       <div><p className="text-xs text-muted-foreground mb-1">Applied</p><p className="text-muted-foreground">{new Date(app.createdAt as string).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p></div>
                     </div>

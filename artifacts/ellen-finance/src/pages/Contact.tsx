@@ -14,6 +14,7 @@ const schema = z.object({
   name: z.string().min(2, "Name required"),
   email: z.string().email("Valid email required"),
   phone: z.string().optional(),
+  subject: z.string().min(2, "Subject required"),
   message: z.string().min(10, "Message too short — please provide more detail"),
 });
 
@@ -29,11 +30,11 @@ export default function Contact() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", phone: "", message: "" },
+    defaultValues: { name: "", email: "", phone: "", subject: "", message: "" },
   });
 
   function onSubmit(values: FormValues) {
-    submit.mutate({ data: values }, {
+    submit.mutate({ data: { ...values, phone: values.phone ?? "" } }, {
       onSuccess: () => setSubmitted(true),
       onError: () => toast({ title: "Failed to send", description: "Please try again or call us directly.", variant: "destructive" }),
     });
@@ -154,6 +155,9 @@ export default function Contact() {
                       </div>
                       <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input type="email" placeholder="your@email.com" data-testid="input-contact-email" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="subject" render={({ field }) => (
+                        <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="e.g. Loan enquiry, Account question" data-testid="input-subject" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="message" render={({ field }) => (
                         <FormItem><FormLabel>Message</FormLabel><FormControl><Textarea placeholder="How can we help you?" rows={5} data-testid="input-message" {...field} /></FormControl><FormMessage /></FormItem>

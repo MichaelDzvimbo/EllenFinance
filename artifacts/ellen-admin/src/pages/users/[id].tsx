@@ -11,7 +11,8 @@ import { format } from "date-fns";
 export default function UserDetail({ params }: { params: { id: string } }) {
   const id = parseInt(params.id);
   const [, setLocation] = useLocation();
-  const { data: user, isLoading } = useGetAdminUser(id, { query: { enabled: !!id } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: user, isLoading } = useGetAdminUser(id, { query: { enabled: !!id } as any });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading user profile...</div>;
   if (!user) return <div className="p-8 text-center text-red-500">User not found</div>;

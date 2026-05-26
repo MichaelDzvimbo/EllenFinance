@@ -60,9 +60,15 @@ router.patch("/admin/documents/:id", requireAdmin, async (req, res): Promise<voi
     return;
   }
 
+  // Filter out null values since Drizzle requires undefined (not null) to skip a column
+  const updateFields: Record<string, unknown> = { reviewedAt: new Date() };
+  if (parsed.data.status != null) updateFields.status = parsed.data.status;
+  if (parsed.data.adminNotes != null) updateFields.adminNotes = parsed.data.adminNotes;
+
   const [updated] = await db
     .update(documentsTable)
-    .set({ ...parsed.data, reviewedAt: new Date() })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .set(updateFields as any)
     .where(eq(documentsTable.id, params.data.id))
     .returning();
 

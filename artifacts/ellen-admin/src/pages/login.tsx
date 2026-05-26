@@ -30,8 +30,8 @@ export default function Login() {
     login.mutate(
       { data: { username: username.trim(), password } },
       {
-        onSuccess: (data: { token?: string }) => {
-          const token = data?.token ?? '';
+        onSuccess: (data) => {
+          const token = (data as unknown as { token?: string })?.token ?? '';
           if (!token) {
             toast({ title: 'Login error', description: 'No token received from server.', variant: 'destructive' });
             return;

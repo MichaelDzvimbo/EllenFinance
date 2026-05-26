@@ -36,7 +36,7 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.label}
               </CardTitle>
-              <stat.icon className={`h-4 w-4 ${i === 2 && stat.value > 0 ? 'text-red-500' : 'text-primary'}`} />
+              <stat.icon className={`h-4 w-4 ${i === 2 && Number(stat.value) > 0 ? 'text-red-500' : 'text-primary'}`} />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold font-sans">{stat.value}</div>

@@ -98,7 +98,7 @@ router.post("/admin/loan-officers", requireAdmin, async (req, res): Promise<void
 
 // PATCH update loan officer
 router.patch("/admin/loan-officers/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const parsed = UpdateOfficerBody.safeParse(req.body);
@@ -121,7 +121,7 @@ router.patch("/admin/loan-officers/:id", requireAdmin, async (req, res): Promise
 
 // DELETE loan officer
 router.delete("/admin/loan-officers/:id", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const [deleted] = await db.delete(loanOfficersTable).where(eq(loanOfficersTable.id, id)).returning();
@@ -133,7 +133,7 @@ router.delete("/admin/loan-officers/:id", requireAdmin, async (req, res): Promis
 
 // POST reset password
 router.post("/admin/loan-officers/:id/reset-password", requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const parsed = ResetPasswordBody.safeParse(req.body);
@@ -154,8 +154,8 @@ router.post("/admin/loan-officers/:id/reset-password", requireAdmin, async (req,
 
 // POST assign application to officer
 router.post("/admin/loan-officers/:id/assign/:applicationId", requireAdmin, async (req, res): Promise<void> => {
-  const officerId = parseInt(req.params.id, 10);
-  const applicationId = parseInt(req.params.applicationId, 10);
+  const officerId = parseInt(req.params.id as string, 10);
+  const applicationId = parseInt(req.params.applicationId as string, 10);
   if (isNaN(officerId) || isNaN(applicationId)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const [officer] = await db.select().from(loanOfficersTable).where(eq(loanOfficersTable.id, officerId)).limit(1);

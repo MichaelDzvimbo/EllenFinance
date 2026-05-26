@@ -50,11 +50,11 @@ export default function Overdues() {
               ) : (
                 overdues.map((loan) => (
                   <TableRow key={loan.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="font-medium">{loan.clientName}</TableCell>
+                    <TableCell className="font-medium">{loan.applicantName ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        {loan.clientPhone}
+                        {loan.applicantPhone ?? "—"}
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-bold text-red-500">

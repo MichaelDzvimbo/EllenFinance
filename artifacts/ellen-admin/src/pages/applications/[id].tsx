@@ -25,8 +25,10 @@ export default function ApplicationDetail({ params }: { params: { id: string } }
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: app, isLoading } = useGetAdminApplication(id, { query: { enabled: !!id } });
-  const { data: documents } = useGetAdminDocuments({ applicationId: id }, { query: { enabled: !!id } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: app, isLoading } = useGetAdminApplication(id, { query: { enabled: !!id } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: documents } = useGetAdminDocuments({ applicationId: id }, { query: { enabled: !!id } as any });
   
   const updateApp = useUpdateAdminApplication();
   const updateDoc = useUpdateAdminDocument();

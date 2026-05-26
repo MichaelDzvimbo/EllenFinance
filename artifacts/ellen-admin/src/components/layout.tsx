@@ -6,7 +6,8 @@ import { useGetAdminMe, useAdminLogout } from "@workspace/api-client-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { data: admin, isLoading, error } = useGetAdminMe({ query: { retry: false } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: admin, isLoading, error } = useGetAdminMe({ query: { retry: false } as any });
   const logout = useAdminLogout();
 
   // Redirect to login if unauthenticated

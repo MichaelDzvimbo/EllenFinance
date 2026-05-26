@@ -8,7 +8,9 @@ export async function getUploadUrl(objectKey: string, _contentType: string): Pro
   }
 
   try {
-    const { getSignedUploadUrl } = await import("@replit/object-storage");
+    // Dynamic import — types not declared; cast to avoid TS7016
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { getSignedUploadUrl } = await import("@replit/object-storage" as any);
     const url = await getSignedUploadUrl(objectKey, { bucketId });
     return url;
   } catch (err) {

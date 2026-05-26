@@ -226,11 +226,11 @@ router.post("/admin/loans/:id/repayment", requireAdmin, async (req, res): Promis
     return;
   }
 
-  const { amount, paymentMethod, referenceNumber, notes } = parsed.data;
+  const { amount, paymentMethod, reference } = parsed.data;
 
   const [repayment] = await db
     .insert(repaymentsTable)
-    .values({ loanId: params.data.id, amount: String(amount), paymentMethod, referenceNumber, notes })
+    .values({ loanId: params.data.id, amount: String(amount), paymentMethod, referenceNumber: reference ?? null })
     .returning();
 
   const [updatedLoan] = await db
