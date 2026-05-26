@@ -405,7 +405,7 @@ export default function Dashboard() {
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl>
                             <SelectContent>
-                              <SelectItem value="ecocash">EcoCash (+263 78 328 6316)</SelectItem>
+                              <SelectItem value="ecocash">EcoCash</SelectItem>
                               <SelectItem value="innbucks">InnBucks</SelectItem>
                             </SelectContent>
                           </Select><FormMessage />
@@ -485,6 +485,19 @@ export default function Dashboard() {
                             {app.loanOutstanding != null && <div><p className="text-xs text-muted-foreground mb-1">Outstanding</p><p className="font-bold text-[#2b4a7a]">${(app.loanOutstanding as number).toLocaleString()}</p></div>}
                             {app.loanTotalPaid != null && <div><p className="text-xs text-muted-foreground mb-1">Paid</p><p className="font-bold text-emerald-600">${(app.loanTotalPaid as number).toLocaleString()}</p></div>}
                             {app.loanNextDue && <div><p className="text-xs text-muted-foreground mb-1">Next Due</p><p className="font-bold">{new Date(app.loanNextDue as string).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></div>}
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-[#2b4a7a]/10 flex flex-wrap gap-3">
+                            <a
+                              href="tel:153110783286316%23"
+                              className="inline-flex items-center gap-2 bg-[#2b4a7a] hover:bg-[#1e3560] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+                            >
+                              <img src="/ecocash.png" alt="" className="h-4 object-contain brightness-0 invert" />
+                              Pay via EcoCash
+                            </a>
+                            <div className="inline-flex items-center gap-2 bg-[#2b4a7a]/10 text-[#2b4a7a] text-xs font-semibold px-4 py-2 rounded-lg">
+                              <img src="/innbucks.png" alt="" className="h-4 object-contain" />
+                              Pay via InnBucks
+                            </div>
                           </div>
                         </div>
                       </div>
