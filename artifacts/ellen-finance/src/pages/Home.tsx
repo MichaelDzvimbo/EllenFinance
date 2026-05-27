@@ -169,12 +169,9 @@ export default function Home() {
               </div>
             </a>
             <div className="text-muted-foreground font-medium">or</div>
-            {/* InnBucks */}
-            <div className="flex items-center gap-4 bg-white px-8 py-5 rounded-2xl border shadow-sm">
+            {/* InnBucks — logo only */}
+            <div className="flex items-center justify-center bg-white px-8 py-5 rounded-2xl border shadow-sm">
               <img src="/innbucks.png" alt="InnBucks" className="h-10 object-contain" />
-              <div className="text-left">
-                <div className="font-bold text-[#2b4a7a]">InnBucks</div>
-              </div>
             </div>
           </div>
         </div>

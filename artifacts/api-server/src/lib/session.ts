@@ -2,8 +2,18 @@ import { Request, Response, NextFunction } from "express";
 import { createHmac, timingSafeEqual } from "crypto";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "ellen2025";
-const SESSION_SECRET = process.env.SESSION_SECRET ?? "ellen-finance-secret-2025";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is required");
+}
+if (!ADMIN_PASSWORD) {
+  throw new Error("ADMIN_PASSWORD environment variable is required");
+}
+
+// Token lifetime: 8 hours for admin sessions
+const TOKEN_MAX_AGE_MS = 8 * 60 * 60 * 1000;
 
 export interface AdminSession {
   username: string;
@@ -12,7 +22,7 @@ export interface AdminSession {
 
 function signToken(payload: object): string {
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const hmac = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  const hmac = createHmac("sha256", SESSION_SECRET!).update(data).digest("base64url");
   return `${data}.${hmac}`;
 }
 
@@ -22,11 +32,14 @@ function verifyToken<T>(token: string): T | null {
     if (dotIdx === -1) return null;
     const data = token.slice(0, dotIdx);
     const hmac = token.slice(dotIdx + 1);
-    const expected = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+    const expected = createHmac("sha256", SESSION_SECRET!).update(data).digest("base64url");
     const hBuf = Buffer.from(hmac, "base64url");
     const eBuf = Buffer.from(expected, "base64url");
     if (hBuf.length !== eBuf.length || !timingSafeEqual(hBuf, eBuf)) return null;
-    return JSON.parse(Buffer.from(data, "base64url").toString()) as T;
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString()) as Record<string, unknown>;
+    // Enforce expiry
+    if (typeof payload.iat === "number" && Date.now() - payload.iat > TOKEN_MAX_AGE_MS) return null;
+    return payload as T;
   } catch {
     return null;
   }
@@ -37,7 +50,7 @@ export function createSession(username: string): string {
 }
 
 export function destroySession(_token: string): void {
-  // Tokens are stateless; nothing to destroy server-side
+  // Tokens are stateless; short TTL enforces expiry
 }
 
 export function getSession(token: string): AdminSession | undefined {
@@ -47,7 +60,16 @@ export function getSession(token: string): AdminSession | undefined {
 }
 
 export function validateCredentials(username: string, password: string): boolean {
-  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
+  if (!ADMIN_PASSWORD) return false;
+  // Constant-time comparison to prevent timing attacks
+  try {
+    const a = Buffer.from(username + ":" + password);
+    const b = Buffer.from(ADMIN_USERNAME + ":" + ADMIN_PASSWORD);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {

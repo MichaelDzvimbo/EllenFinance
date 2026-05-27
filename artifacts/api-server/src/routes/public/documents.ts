@@ -5,10 +5,13 @@ import {
   CreateDocumentBody,
 } from "@workspace/api-zod";
 import { getUploadUrl } from "../../lib/storage";
+import { requireAdmin } from "../../lib/session";
 
 const router: IRouter = Router();
 
-router.post("/documents/upload-url", async (req, res): Promise<void> => {
+// Both endpoints require admin auth — document uploads go through the
+// authenticated /user/documents routes instead (see userAuth.ts)
+router.post("/documents/upload-url", requireAdmin, async (req, res): Promise<void> => {
   const parsed = RequestDocumentUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -23,7 +26,7 @@ router.post("/documents/upload-url", async (req, res): Promise<void> => {
   res.json({ uploadUrl, objectKey });
 });
 
-router.post("/documents", async (req, res): Promise<void> => {
+router.post("/documents", requireAdmin, async (req, res): Promise<void> => {
   const parsed = CreateDocumentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

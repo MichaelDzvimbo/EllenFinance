@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "crypto";
 
-const SESSION_SECRET = process.env.SESSION_SECRET ?? "ellen-finance-secret-2025";
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is required");
+}
+
+// Token lifetime: 30 days for user sessions
+const TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface UserSession {
   userId: number;
@@ -11,7 +18,7 @@ export interface UserSession {
 
 function signToken(payload: object): string {
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const hmac = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  const hmac = createHmac("sha256", SESSION_SECRET!).update(data).digest("base64url");
   return `${data}.${hmac}`;
 }
 
@@ -21,11 +28,14 @@ function verifyToken<T>(token: string): T | null {
     if (dotIdx === -1) return null;
     const data = token.slice(0, dotIdx);
     const hmac = token.slice(dotIdx + 1);
-    const expected = createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+    const expected = createHmac("sha256", SESSION_SECRET!).update(data).digest("base64url");
     const hBuf = Buffer.from(hmac, "base64url");
     const eBuf = Buffer.from(expected, "base64url");
     if (hBuf.length !== eBuf.length || !timingSafeEqual(hBuf, eBuf)) return null;
-    return JSON.parse(Buffer.from(data, "base64url").toString()) as T;
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString()) as Record<string, unknown>;
+    // Enforce token expiry
+    if (typeof payload.iat === "number" && Date.now() - payload.iat > TOKEN_MAX_AGE_MS) return null;
+    return payload as T;
   } catch {
     return null;
   }
@@ -36,7 +46,7 @@ export function createUserSession(userId: number, email: string, fullName: strin
 }
 
 export function destroyUserSession(_token: string): void {
-  // Tokens are stateless; nothing to destroy server-side
+  // Tokens are stateless; short TTL enforces expiry
 }
 
 export function getUserSession(token: string): UserSession | undefined {

@@ -1,9 +1,10 @@
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { useEffect } from "react";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Applications from "@/pages/applications/index";
@@ -23,38 +24,90 @@ import NotFound from "@/pages/not-found";
 // Wire up admin token on app boot so requests after a page refresh carry auth
 setAuthTokenGetter(() => localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+    },
+  },
+});
+
+function getAdminToken(): string | null {
+  return localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token");
+}
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const [, setLocation] = useLocation();
+  const token = getAdminToken();
+
+  useEffect(() => {
+    if (!token) {
+      setLocation("/login");
+    }
+  }, [token, setLocation]);
+
+  if (!token) return null;
+  return <>{children}</>;
+}
 
 function AppRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      
-      <Route path="/dashboard"><Layout><Dashboard /></Layout></Route>
-      
-      <Route path="/applications"><Layout><Applications /></Layout></Route>
-      <Route path="/applications/:id">{(params) => <Layout><ApplicationDetail params={params} /></Layout>}</Route>
-      
-      <Route path="/loans"><Layout><Loans /></Layout></Route>
-      <Route path="/loans/:id">{(params) => <Layout><LoanDetail params={params} /></Layout>}</Route>
-      
-      <Route path="/overdues"><Layout><Overdues /></Layout></Route>
-      <Route path="/documents"><Layout><Documents /></Layout></Route>
-      <Route path="/notifications"><Layout><Notifications /></Layout></Route>
-      
-      <Route path="/users"><Layout><Users /></Layout></Route>
-      <Route path="/users/:id">{(params) => <Layout><UserDetail params={params} /></Layout>}</Route>
-      
-      <Route path="/loan-officers"><Layout><LoanOfficers /></Layout></Route>
-      <Route path="/audit-logs"><Layout><AuditLogs /></Layout></Route>
-      <Route path="/settings"><Layout><Settings /></Layout></Route>
-      
+
+      <Route path="/dashboard">
+        <RequireAuth><Layout><Dashboard /></Layout></RequireAuth>
+      </Route>
+
+      <Route path="/applications">
+        <RequireAuth><Layout><Applications /></Layout></RequireAuth>
+      </Route>
+      <Route path="/applications/:id">
+        {(params) => <RequireAuth><Layout><ApplicationDetail params={params} /></Layout></RequireAuth>}
+      </Route>
+
+      <Route path="/loans">
+        <RequireAuth><Layout><Loans /></Layout></RequireAuth>
+      </Route>
+      <Route path="/loans/:id">
+        {(params) => <RequireAuth><Layout><LoanDetail params={params} /></Layout></RequireAuth>}
+      </Route>
+
+      <Route path="/overdues">
+        <RequireAuth><Layout><Overdues /></Layout></RequireAuth>
+      </Route>
+      <Route path="/documents">
+        <RequireAuth><Layout><Documents /></Layout></RequireAuth>
+      </Route>
+      <Route path="/notifications">
+        <RequireAuth><Layout><Notifications /></Layout></RequireAuth>
+      </Route>
+
+      <Route path="/users">
+        <RequireAuth><Layout><Users /></Layout></RequireAuth>
+      </Route>
+      <Route path="/users/:id">
+        {(params) => <RequireAuth><Layout><UserDetail params={params} /></Layout></RequireAuth>}
+      </Route>
+
+      <Route path="/loan-officers">
+        <RequireAuth><Layout><LoanOfficers /></Layout></RequireAuth>
+      </Route>
+      <Route path="/audit-logs">
+        <RequireAuth><Layout><AuditLogs /></Layout></RequireAuth>
+      </Route>
+      <Route path="/settings">
+        <RequireAuth><Layout><Settings /></Layout></RequireAuth>
+      </Route>
+
       <Route path="/">
         <Redirect to="/dashboard" />
       </Route>
-      
+
       <Route>
-        <Layout><NotFound /></Layout>
+        <RequireAuth><Layout><NotFound /></Layout></RequireAuth>
       </Route>
     </Switch>
   );
@@ -64,7 +117,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Set dark class globally to enforce dark cockpit vibe */}
         <div className="dark">
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AppRoutes />

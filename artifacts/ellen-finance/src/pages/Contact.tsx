@@ -118,9 +118,6 @@ export default function Contact() {
                 </a>
                 <div className="flex items-center gap-3">
                   <img src="/innbucks.png" alt="InnBucks" className="h-7 object-contain bg-white rounded p-0.5" />
-                  <div>
-                    <p className="font-bold text-sm">InnBucks</p>
-                  </div>
                 </div>
               </div>
             </div>

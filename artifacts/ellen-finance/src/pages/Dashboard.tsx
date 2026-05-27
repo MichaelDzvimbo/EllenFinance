@@ -23,7 +23,11 @@ async function apiFetch(path: string, token: string) {
   const res = await fetch(`${BASE}/api${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to fetch");
+  if (!res.ok) {
+    let msg = `Request failed (${res.status})`;
+    try { const d = await res.json(); if (d?.error) msg = d.error; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -295,7 +299,7 @@ export default function Dashboard() {
                       >
                         <Upload className={`mx-auto mb-2 ${isDragOver ? "text-[#2b4a7a]" : "text-muted-foreground"}`} size={24} />
                         <p className="font-medium text-sm">Drop file here or click to browse</p>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG — max 10MB</p>
+                        <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, HEIC — max 10MB</p>
                         {uploadState?.status === "error" && <p className="text-red-500 text-xs mt-2">Upload failed — try again</p>}
                       </div>
                     )}
@@ -303,7 +307,7 @@ export default function Dashboard() {
                       type="file"
                       ref={(el) => { fileRefs.current[doc.key] = el; }}
                       className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp"
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f, doc.key); e.target.value = ""; }}
                     />
                   </div>
@@ -491,13 +495,13 @@ export default function Dashboard() {
                             <a
                               href="tel:153110783286316%23"
                               className="inline-flex items-center gap-2 bg-[#2b4a7a] hover:bg-[#1e3560] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+                              title="Tap to pay via EcoCash"
                             >
-                              <img src="/ecocash.png" alt="" className="h-4 object-contain brightness-0 invert" />
+                              <img src="/ecocash.png" alt="EcoCash" className="h-4 object-contain brightness-0 invert" />
                               Pay via EcoCash
                             </a>
-                            <div className="inline-flex items-center gap-2 bg-[#2b4a7a]/10 text-[#2b4a7a] text-xs font-semibold px-4 py-2 rounded-lg">
-                              <img src="/innbucks.png" alt="" className="h-4 object-contain" />
-                              Pay via InnBucks
+                            <div className="inline-flex items-center justify-center bg-[#2b4a7a]/10 px-4 py-2 rounded-lg">
+                              <img src="/innbucks.png" alt="InnBucks" className="h-5 object-contain" />
                             </div>
                           </div>
                         </div>

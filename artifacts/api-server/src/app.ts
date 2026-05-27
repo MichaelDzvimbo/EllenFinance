@@ -26,14 +26,60 @@ app.use(
   }),
 );
 
-// Allow all origins (needed for Replit proxy; tighten in production with allowlist)
-app.use(cors());
+// CORS: restrict to known origins in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : undefined;
 
-// Parse JSON bodies; cap at 2 MB to prevent large-payload abuse
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+app.use(
+  cors({
+    origin: allowedOrigins
+      ? (origin, cb) => {
+          // Allow requests with no origin (server-to-server, curl, etc.) in dev
+          if (!origin) return cb(null, true);
+          if (allowedOrigins.some((o) => origin === o || origin.endsWith(o))) {
+            return cb(null, true);
+          }
+          cb(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : true, // In dev (no ALLOWED_ORIGINS set), allow all origins
+    credentials: true,
+  }),
+);
+
+// Simple in-memory rate limiter for auth endpoints
+const authAttempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 20; // max attempts per window
+
+function authRateLimiter(req: Request, res: Response, next: NextFunction): void {
+  const ip = req.ip ?? req.socket?.remoteAddress ?? "unknown";
+  const now = Date.now();
+  const entry = authAttempts.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    authAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return next();
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    res.status(429).json({ error: "Too many attempts — please try again in 15 minutes" });
+    return;
+  }
+  next();
+}
+
+// Parse JSON bodies; cap at 10 MB for document uploads (base64 etc.)
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api", router);
+
+// Apply rate limiting to auth endpoints
+app.use("/api/auth/login", authRateLimiter);
+app.use("/api/auth/register", authRateLimiter);
+app.use("/api/admin/login", authRateLimiter);
 
 // 404 — no route matched
 app.use((_req: Request, res: Response) => {
@@ -46,6 +92,8 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   const status = (err as { status?: number; statusCode?: number })?.status
     ?? (err as { statusCode?: number })?.statusCode
     ?? 500;
+
+  // Never leak internal error details in production
   const message =
     process.env.NODE_ENV === "production"
       ? "Internal server error"
