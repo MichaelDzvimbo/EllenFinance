@@ -150,14 +150,17 @@ export default function Dashboard() {
 
   const kycStatus = dashboard?.kycStatus ?? user?.kycStatus ?? "not_submitted";
   const kycStatusCfg = KYC_STATUS[kycStatus] ?? KYC_STATUS.not_submitted;
-  const applications = (dashboard?.applications ?? []) as Array<Record<string, unknown>>;
+  // Filter out kyc_only placeholder applications — these are auto-created when
+  // a user uploads KYC docs before submitting a real loan application.
+  const allApplications = (dashboard?.applications ?? []) as Array<Record<string, unknown>>;
+  const applications = allApplications.filter((a) => a.status !== "kyc_only");
   const documents = (dashboard?.documents ?? []) as Array<{ docType: string; status: string }>;
 
   const uploadedDocTypes = new Set(documents.map((d) => d.docType));
 
   const tabs = [
     { key: "kyc", label: "KYC Documents", badge: kycStatus === "approved" ? "✓" : null },
-    { key: "apply", label: "Apply for Loan", badge: applications.length > 0 ? String(applications.length) : null },
+    { key: "apply", label: "Apply for Loan", badge: null },
     { key: "applications", label: "My Applications", badge: applications.length > 0 ? String(applications.length) : null },
   ] as const;
 

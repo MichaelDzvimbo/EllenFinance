@@ -24,20 +24,46 @@ import NotFound from "@/pages/not-found";
 // Wire up admin token on app boot so requests after a page refresh carry auth
 setAuthTokenGetter(() => localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token"));
 
+function getAdminToken(): string | null {
+  return localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token");
+}
+
+function clearAdminToken(): void {
+  localStorage.removeItem("admin_token");
+  sessionStorage.removeItem("admin_token");
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Don't retry on 401 — the session is gone; redirect to login instead
+        if ((error as { status?: number })?.status === 401) return false;
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
       staleTime: 30_000,
     },
   },
 });
 
-function getAdminToken(): string | null {
-  return localStorage.getItem("admin_token") ?? sessionStorage.getItem("admin_token");
-}
+// Global 401 handler: clear stored token and navigate to /login when any
+// React Query request comes back unauthorised (expired admin session).
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === "updated" && event.action?.type === "error") {
+    const err = event.action.error as { status?: number } | null;
+    if (err?.status === 401) {
+      clearAdminToken();
+      window.location.replace(
+        import.meta.env.BASE_URL.replace(/\/$/, "") + "/login",
+      );
+    }
+  }
+});
 
+// RequireAuth: all hooks run unconditionally (Rules of Hooks).
+// The useEffect redirects unauthenticated users after mount; the synchronous
+// null return prevents a flash of protected content on the same render.
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const token = getAdminToken();

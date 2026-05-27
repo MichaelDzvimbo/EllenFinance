@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { getStoredToken } from "@/lib/auth";
 import type { AuthUser } from "@/lib/auth";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -53,8 +54,13 @@ export default function Auth() {
   const { user, login } = useAuth();
   const { toast } = useToast();
 
+  // All hooks must run unconditionally (Rules of Hooks).
+  // Redirect to dashboard if already authenticated — the early return below
+  // suppresses rendering the form without violating hook ordering.
   useEffect(() => {
-    if (user) setLocation("/dashboard");
+    if (user || getStoredToken()) {
+      setLocation("/dashboard");
+    }
   }, [user, setLocation]);
 
   useEffect(() => {
@@ -71,6 +77,9 @@ export default function Auth() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  // Don't flash the form while redirect is in flight
+  if (user || getStoredToken()) return null;
 
   async function onRegister(values: RegisterValues) {
     try {

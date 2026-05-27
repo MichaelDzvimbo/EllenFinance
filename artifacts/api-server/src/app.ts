@@ -74,12 +74,14 @@ function authRateLimiter(req: Request, res: Response, next: NextFunction): void 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use("/api", router);
-
-// Apply rate limiting to auth endpoints
+// Apply rate limiting to auth endpoints BEFORE the router so the middleware
+// actually runs. Express matches middleware in registration order — mounting
+// the rate limiter after app.use("/api", router) would be a no-op.
 app.use("/api/auth/login", authRateLimiter);
 app.use("/api/auth/register", authRateLimiter);
 app.use("/api/admin/login", authRateLimiter);
+
+app.use("/api", router);
 
 // 404 — no route matched
 app.use((_req: Request, res: Response) => {

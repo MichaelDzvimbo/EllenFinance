@@ -8,6 +8,7 @@ import calculatorRouter from "./public/calculator";
 import contactRouter from "./public/contact";
 import userAuthRouter from "./public/userAuth";
 import loanFormRouter from "./public/loanForm";
+import stubUploadRouter from "./public/stubUpload";
 import loanOfficersRouter from "./admin/loanOfficers";
 
 // Admin routes
@@ -32,6 +33,7 @@ router.use(calculatorRouter);
 router.use(contactRouter);
 router.use(userAuthRouter);
 router.use(loanFormRouter);
+router.use(stubUploadRouter); // dev-only stub; harmless in prod (upload URL points to real storage)
 
 // Admin
 router.use(adminAuthRouter);
